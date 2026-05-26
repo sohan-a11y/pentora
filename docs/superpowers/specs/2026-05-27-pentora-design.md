@@ -1,9 +1,11 @@
 # Pentora — Autonomous Web Application Pentest Orchestrator
 
 **Date:** 2026-05-27
-**Status:** Design — awaiting user approval
+**Status:** Design — approved
 **Author:** Drafted via brainstorming session
 **Target release:** v1.0 (production-ready, publishable)
+**License:** AGPLv3
+**Distribution:** PyPI + GitHub release (one-line install.sh) + Docker image (ghcr.io)
 
 ---
 
@@ -350,6 +352,8 @@ pentora <url> --ai-mode \
 
 **API keys** read from env vars: `OPENROUTER_API_KEY`, `NVIDIA_API_KEY`. Ollama needs no key.
 
+**No default provider.** When `--ai-mode` is on, `--llm-provider` is required. This is intentional — a pentester must consciously decide where each scan's data goes. The previous choice is remembered in `~/.pentora/last-llm.yaml` so the user can re-use it next run with `--llm-provider last`, but there is no global default that could leak data silently.
+
 **Privacy guardrail:** When AI mode is on, Pentora sanitizes outbound prompts by default — strips hostnames, real user IDs, API responses with PII. User can disable with `--no-sanitize-llm`.
 
 ## 7. CLI Design
@@ -631,11 +635,13 @@ curl -fsSL https://raw.githubusercontent.com/<user>/pentora/main/install.sh | ba
 
 ---
 
-## 15. Open Questions for Final Approval
+## 15. Locked Decisions
 
-1. Tool name confirmed as **Pentora**? (alternative working names: `pentai`, `pentkit`)
-2. Default LLM provider when `--ai-mode` is set with no flag → propose: **Ollama** (most private)
-3. License: **AGPLv3** (forces forks/derivatives to stay open) vs **MIT** (max adoption)?
-4. Should v1.0 ship a Docker image as a release artifact, or PyPI-only at first?
+1. ✅ Tool name: **Pentora**
+2. ✅ LLM default: **None** — `--llm-provider` is required when `--ai-mode` is on. Last choice cached at `~/.pentora/last-llm.yaml`, recallable via `--llm-provider last`.
+3. ✅ License: **AGPLv3**
+4. ✅ Distribution: **PyPI + GitHub release (install.sh) + Docker image (ghcr.io)** — all three at v1.0 launch.
 
-If those four are good, this spec is final and I'll move to the implementation plan.
+## 16. Delivery Notes
+
+Building all of §5 + §6 + §7 + §9 + §10 in a single chat session is not realistic — this is a 10–15kLOC codebase. The implementation plan (next step) will break this into 30–50 ordered sub-tasks, each verifiable on its own. Some sub-tasks will be executed live in this session; the larger ones will produce complete files that you commit and verify on your Kali box. Every module ships with unit tests covering parsers, scorers, and reporters. End-to-end validation happens against OWASP Juice Shop / DVWA before you point Pentora at a paying client.
