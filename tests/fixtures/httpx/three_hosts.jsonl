@@ -1,0 +1,3 @@
+{"url":"https://api.pure.app","status_code":200,"title":"Pure API","tech":["nginx","cloudflare"]}
+{"url":"https://cdn.pure.app","status_code":403,"title":""}
+{"url":"https://dead.pure.app","status_code":0,"failed":true}
