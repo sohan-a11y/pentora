@@ -1,0 +1,5 @@
+{"timestamp":"2026-05-31T00:00:00Z","request":{"method":"GET","endpoint":"https://api.pure.app/"},"response":{"status_code":200}}
+{"timestamp":"2026-05-31T00:00:01Z","request":{"method":"GET","endpoint":"https://api.pure.app/login"},"response":{"status_code":200}}
+{"timestamp":"2026-05-31T00:00:02Z","request":{"method":"POST","endpoint":"https://api.pure.app/api/search"},"response":{"status_code":200}}
+
+{"malformed":true
