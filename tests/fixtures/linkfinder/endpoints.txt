@@ -1,0 +1,6 @@
+/api/v1/users
+/api/v1/login
+/static/js/app.bundle.js
+/admin/dashboard
+
+/api/v1/orders?id=
