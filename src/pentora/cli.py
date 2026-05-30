@@ -1,6 +1,8 @@
 """Click-based CLI entry point for Pentora."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 
 from pentora.version import __version__
@@ -15,9 +17,67 @@ def main(ctx: click.Context) -> None:
 
 @main.command()
 @click.argument("url")
-def scan(url: str) -> None:
+@click.option("--output", "-o", type=click.Path(), default="./pentora-out", help="Output directory")
+@click.option("--phases", default="recon", help="Comma-separated phase names (or 'all')")
+@click.option("--scope-include", default="", help="Comma-separated in-scope hosts/wildcards")
+@click.option("--scope-exclude", default="", help="Comma-separated excluded hosts")
+@click.option("--token-a", default=None)
+@click.option("--token-b", default=None)
+@click.option("--profile", default="generic")
+def scan(
+    url: str,
+    output: str,
+    phases: str,
+    scope_include: str,
+    scope_exclude: str,
+    token_a: str | None,
+    token_b: str | None,
+    profile: str,
+) -> None:
     """Run a full pentest scan against URL."""
-    click.echo(f"[stub] scan {url}")
+    import asyncio
+    from urllib.parse import urlparse
+
+    from pentora.config import load_config
+    from pentora.context import ScanContext
+    from pentora.modules.recon import ReconModule
+    from pentora.orchestrator import Orchestrator
+    from pentora.reporters.finding_folder import FindingFolderReporter
+    from pentora.reporters.html import HtmlReporter
+    from pentora.reporters.json_reporter import JsonReporter
+    from pentora.reporters.markdown import MarkdownReporter
+    from pentora.scope import Scope
+
+    # Default scope: derive from URL if --scope-include is empty
+    if not scope_include:
+        host = urlparse(url).hostname or url
+        root = ".".join(host.split(".")[-2:])
+        include = [root, f"*.{root}"]
+    else:
+        include = [s.strip() for s in scope_include.split(",") if s.strip()]
+    exclude = [s.strip() for s in scope_exclude.split(",") if s.strip()]
+
+    cfg = load_config()
+    ctx = ScanContext(
+        target=url,
+        output_dir=Path(output),
+        config=cfg,
+        scope=Scope(include=include, exclude=exclude),
+        profile_name=profile,
+        token_a=token_a,
+        token_b=token_b,
+    )
+
+    phase_map = {"recon": ReconModule}
+    requested = [p.strip() for p in phases.split(",") if p.strip()]
+    if "all" in requested:
+        requested = list(phase_map.keys())
+    modules = [phase_map[p]() for p in requested if p in phase_map]
+
+    reporters = [JsonReporter(), MarkdownReporter(), HtmlReporter(), FindingFolderReporter()]
+    orc = Orchestrator(modules=modules, reporters=reporters)
+    asyncio.run(orc.run(ctx))
+    click.echo(f"Scan complete. Reports written to {output}/")
 
 
 @main.command()
