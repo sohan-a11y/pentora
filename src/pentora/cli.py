@@ -42,8 +42,10 @@ def scan(
 
     from pentora.config import load_config
     from pentora.context import ScanContext
+    from pentora.modules.base import PhaseModule
     from pentora.modules.recon import ReconModule
     from pentora.orchestrator import Orchestrator
+    from pentora.reporters.base import Reporter
     from pentora.reporters.finding_folder import FindingFolderReporter
     from pentora.reporters.html import HtmlReporter
     from pentora.reporters.json_reporter import JsonReporter
@@ -70,7 +72,7 @@ def scan(
         token_b=token_b,
     )
 
-    phase_map = {"recon": ReconModule}
+    phase_map: dict[str, type[PhaseModule]] = {"recon": ReconModule}
     requested = [p.strip() for p in phases.split(",") if p.strip()]
     if "all" in requested:
         requested = list(phase_map.keys())
@@ -86,9 +88,14 @@ def scan(
         click.echo("Reporters: json, markdown, html, finding_folder")
         return
 
-    modules = [phase_map[p]() for p in requested if p in phase_map]
+    modules: list[PhaseModule] = [phase_map[p]() for p in requested if p in phase_map]
 
-    reporters = [JsonReporter(), MarkdownReporter(), HtmlReporter(), FindingFolderReporter()]
+    reporters: list[Reporter] = [
+        JsonReporter(),
+        MarkdownReporter(),
+        HtmlReporter(),
+        FindingFolderReporter(),
+    ]
     orc = Orchestrator(modules=modules, reporters=reporters)
     asyncio.run(orc.run(ctx))
     click.echo(f"Scan complete. Reports written to {output}/")

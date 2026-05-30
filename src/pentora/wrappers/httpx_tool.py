@@ -19,7 +19,7 @@ class HttpxWrapper(ToolWrapper):
     tool_name = "httpx"
     install_check_argv = ["httpx", "-version"]
 
-    def build_argv(self, hosts: list[str]) -> list[str]:  # type: ignore[override]
+    def build_argv(self, hosts: list[str]) -> list[str]:
         # httpx reads stdin when no -l/-u flag; we'll feed via stdin in the orchestrator,
         # but for direct invocation just use -u with comma-joined hosts.
         return [
@@ -28,7 +28,7 @@ class HttpxWrapper(ToolWrapper):
             "-json", "-silent", "-tech-detect", "-title",
         ]
 
-    def parse(self, stdout: str, stderr: str, returncode: int) -> list[HttpxResult]:  # type: ignore[override]
+    def parse(self, stdout: str, stderr: str, returncode: int) -> list[HttpxResult]:
         out: list[HttpxResult] = []
         for line in stdout.splitlines():
             if not line.strip():

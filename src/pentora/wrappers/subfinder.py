@@ -8,8 +8,8 @@ class SubfinderWrapper(ToolWrapper):
     tool_name = "subfinder"
     install_check_argv = ["subfinder", "-version"]
 
-    def build_argv(self, domain: str) -> list[str]:  # type: ignore[override]
+    def build_argv(self, domain: str) -> list[str]:
         return [self.tool_name, "-d", domain, "-silent", "-all"]
 
-    def parse(self, stdout: str, stderr: str, returncode: int) -> list[str]:  # type: ignore[override]
+    def parse(self, stdout: str, stderr: str, returncode: int) -> list[str]:
         return [line.strip() for line in stdout.splitlines() if line.strip()]
