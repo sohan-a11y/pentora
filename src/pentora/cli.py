@@ -5,7 +5,14 @@ from pathlib import Path
 
 import click
 
+from pentora.modules.base import PhaseModule
+from pentora.modules.recon import ReconModule
 from pentora.version import __version__
+
+# Registry of available phase modules, keyed by phase name (used by `scan` and `list-modules`).
+PHASE_MAP: dict[str, type[PhaseModule]] = {
+    "recon": ReconModule,
+}
 
 
 @click.group(invoke_without_command=False)
@@ -42,8 +49,6 @@ def scan(
 
     from pentora.config import load_config
     from pentora.context import ScanContext
-    from pentora.modules.base import PhaseModule
-    from pentora.modules.recon import ReconModule
     from pentora.orchestrator import Orchestrator
     from pentora.reporters.base import Reporter
     from pentora.reporters.finding_folder import FindingFolderReporter
@@ -72,10 +77,9 @@ def scan(
         token_b=token_b,
     )
 
-    phase_map: dict[str, type[PhaseModule]] = {"recon": ReconModule}
     requested = [p.strip() for p in phases.split(",") if p.strip()]
     if "all" in requested:
-        requested = list(phase_map.keys())
+        requested = list(PHASE_MAP.keys())
 
     if dry_run:
         click.echo("=== DRY RUN ===")
@@ -88,7 +92,7 @@ def scan(
         click.echo("Reporters: json, markdown, html, finding_folder")
         return
 
-    modules: list[PhaseModule] = [phase_map[p]() for p in requested if p in phase_map]
+    modules: list[PhaseModule] = [PHASE_MAP[p]() for p in requested if p in PHASE_MAP]
 
     reporters: list[Reporter] = [
         JsonReporter(),
@@ -143,4 +147,5 @@ def list_profiles() -> None:
 @main.command("list-modules")
 def list_modules() -> None:
     """List available phase modules."""
-    click.echo("[stub] list-modules")
+    for key in PHASE_MAP:
+        click.echo(key)
