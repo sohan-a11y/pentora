@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pentora Report — {{ target }}</title>
+<style>
+:root {
+  --bg: #0e1116; --fg: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+  --crit: #ff5757; --high: #ff8c42; --med: #ffd454; --low: #6ee7b7; --info: #8b949e;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+body { background: var(--bg); color: var(--fg); margin: 0; padding: 2rem; max-width: 1200px; margin: auto; }
+h1 { border-bottom: 2px solid var(--accent); padding-bottom: .5rem; }
+.meta { color: var(--muted); margin: 1rem 0 2rem; }
+.summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin: 2rem 0; }
+.summary div { padding: 1rem; border-radius: .5rem; text-align: center; font-weight: 600; }
+.summary .crit { background: var(--crit); color: #000; }
+.summary .high { background: var(--high); color: #000; }
+.summary .med  { background: var(--med);  color: #000; }
+.summary .low  { background: var(--low);  color: #000; }
+.summary .info { background: var(--info); color: #000; }
+.finding { border-left: 4px solid var(--muted); padding: 1rem 1.5rem; margin: 1.5rem 0; background: #161b22; border-radius: 0 .5rem .5rem 0; }
+.finding.crit { border-color: var(--crit); }
+.finding.high { border-color: var(--high); }
+.finding.med  { border-color: var(--med); }
+.finding.low  { border-color: var(--low); }
+.badge { display: inline-block; padding: .2rem .6rem; border-radius: .3rem; font-size: .8rem; font-weight: 700; color: #000; }
+.badge.crit { background: var(--crit); }
+.badge.high { background: var(--high); }
+.badge.med  { background: var(--med); }
+.badge.low  { background: var(--low); }
+.badge.info { background: var(--info); }
+code { background: #21262d; padding: .1rem .4rem; border-radius: .2rem; }
+.kv { color: var(--muted); margin-right: .5rem; }
+</style>
+</head>
+<body>
+<h1>Pentora Report — {{ target }}</h1>
+<div class="meta">Generated {{ generated_at }} • Pentora {{ version }}</div>
+<div class="summary">
+  <div class="crit">{{ counts.critical }}<br>Critical</div>
+  <div class="high">{{ counts.high }}<br>High</div>
+  <div class="med">{{ counts.medium }}<br>Medium</div>
+  <div class="low">{{ counts.low }}<br>Low</div>
+  <div class="info">{{ counts.info }}<br>Info</div>
+</div>
+{% for f in findings %}
+<div class="finding {{ f.severity.value[:4] }}">
+  <span class="badge {{ f.severity.value[:4] }}">{{ f.severity.value | upper }}</span>
+  <h2>{{ f.title }}</h2>
+  <p><span class="kv">Module</span> <code>{{ f.module }}</code></p>
+  <p><span class="kv">Endpoint</span> <code>{{ f.method }} {{ f.endpoint }}</code></p>
+  <p><span class="kv">CVSS</span> {{ f.cvss.score }} (<code>{{ f.cvss.vector }}</code>)</p>
+  <p><span class="kv">Evidence</span> {{ f.evidence }}</p>
+  {% if f.remediation %}<p><span class="kv">Remediation</span> {{ f.remediation }}</p>{% endif %}
+</div>
+{% endfor %}
+</body>
+</html>

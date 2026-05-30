@@ -52,6 +52,9 @@ pentora = "pentora.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+pentora = ["templates/*.html", "templates/*.css", "templates/*.j2"]
+
 [tool.setuptools.dynamic]
 version = {attr = "pentora.version.__version__"}
 
