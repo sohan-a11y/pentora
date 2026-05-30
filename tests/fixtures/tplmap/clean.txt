@@ -1,0 +1,7 @@
+[+] Tplmap 0.5
+    Automatic Server-Side Template Injection Detection and Exploitation Tool
+
+[+] Testing if GET parameter 'name' is injectable
+[+] Smarty plugin is testing rendering with tag '{*}'
+[+] Jinja2 plugin is testing rendering with tag '{{*}}'
+[-] Tplmap could not detect a template injection.
