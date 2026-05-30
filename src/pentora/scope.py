@@ -28,7 +28,7 @@ class Scope:
             ]
 
     @classmethod
-    def from_file(cls, path: Path) -> "Scope":
+    def from_file(cls, path: Path) -> Scope:
         include: list[str] = []
         exclude: list[str] = []
         exclude_paths: list[str] = []
@@ -65,13 +65,10 @@ class Scope:
                 return False
 
         # Include host check
-        for pattern in self.include:
-            if fnmatch.fnmatch(host, pattern):
-                return True
-        return False
+        return any(fnmatch.fnmatch(host, pattern) for pattern in self.include)
 
     def assert_in_scope(self, url: str) -> None:
-        """Raise ScopeViolation for forbidden URLs, return None for in-scope, raise for out-of-scope."""
+        """Raise ScopeViolation for forbidden URLs; return None when in-scope."""
         parsed = urlparse(url)
         host = parsed.hostname or ""
         for forbidden in self._forbidden:

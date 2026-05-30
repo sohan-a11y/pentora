@@ -45,7 +45,7 @@ class ToolWrapper(ABC):
         )
         try:
             stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=self._timeout_s)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             raise
         duration_ms = int((time.monotonic() - t0) * 1000)

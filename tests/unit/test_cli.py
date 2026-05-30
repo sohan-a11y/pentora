@@ -1,4 +1,5 @@
 from click.testing import CliRunner
+
 from pentora.cli import main
 from pentora.version import __version__
 
@@ -14,5 +15,15 @@ def test_cli_help_lists_subcommands() -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["--help"])
     assert result.exit_code == 0
-    for sub in ("scan", "setup", "doctor", "update", "report", "import-results", "list-profiles", "list-modules"):
+    subcommands = (
+        "scan",
+        "setup",
+        "doctor",
+        "update",
+        "report",
+        "import-results",
+        "list-profiles",
+        "list-modules",
+    )
+    for sub in subcommands:
         assert sub in result.output

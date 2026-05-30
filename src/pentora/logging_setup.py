@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import structlog
@@ -35,9 +35,9 @@ def log_tool_invocation(
     returncode: int,
     duration_ms: int,
 ) -> None:
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
     payload = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "tool": tool,
         "argv": argv,
         "stdout": stdout[:50000],

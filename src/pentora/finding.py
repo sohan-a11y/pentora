@@ -4,7 +4,7 @@ from __future__ import annotations
 import enum
 import hashlib
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 # CVSS v3.1 metric values (Base score only — Temporal/Environmental not used here).
 # Reference: https://www.first.org/cvss/v3.1/specification-document
@@ -24,7 +24,7 @@ class Severity(enum.Enum):
     CRITICAL = "critical"
 
     @classmethod
-    def from_score(cls, score: float) -> "Severity":
+    def from_score(cls, score: float) -> Severity:
         if score == 0.0:
             return cls.INFO
         if score < 4.0:
@@ -42,7 +42,7 @@ class CVSS:
     score: float
 
     @classmethod
-    def from_vector(cls, vector: str) -> "CVSS":
+    def from_vector(cls, vector: str) -> CVSS:
         score = _calc_base_score(vector)
         return cls(vector=vector, score=round(score, 1))
 
@@ -53,7 +53,9 @@ class CVSS:
 
 def _calc_base_score(vector: str) -> float:
     # Parse "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
-    parts = dict(p.split(":", 1) for p in vector.split("/") if ":" in p and not p.startswith("CVSS"))
+    parts = dict(
+        p.split(":", 1) for p in vector.split("/") if ":" in p and not p.startswith("CVSS")
+    )
     av = _AV[parts["AV"]]
     ac = _AC[parts["AC"]]
     ui = _UI[parts["UI"]]
@@ -81,7 +83,7 @@ class Finding:
     request_raw: str = ""
     response_raw: str = ""
     screenshot_path: str | None = None
-    discovered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    discovered_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     source: str = "pentora"  # pentora | burp | zap | nuclei
     extra: dict[str, object] = field(default_factory=dict)
 

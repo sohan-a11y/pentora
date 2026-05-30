@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pentora.finding import CVSS, Finding, Severity
 
@@ -48,4 +48,4 @@ def test_finding_has_timestamp() -> None:
         evidence="From subfinder",
         cvss=CVSS.from_vector("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N"),
     )
-    assert f.discovered_at <= datetime.now(timezone.utc)
+    assert f.discovered_at <= datetime.now(UTC)

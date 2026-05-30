@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pentora.config import Config, load_config
+from pentora.config import load_config
 
 
 def test_load_config_defaults_only() -> None:
