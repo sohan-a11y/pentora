@@ -1,0 +1,13 @@
+        ___
+       __H__
+ ___ ___[)]_____ ___ ___  {1.8.5}
+
+[*] starting @ 00:00:00 /2026-05-31/
+
+[00:00:01] [INFO] testing connection to the target URL
+[00:00:02] [INFO] testing if GET parameter 'id' is dynamic
+[00:00:03] [WARNING] GET parameter 'id' does not appear to be dynamic
+[00:00:09] [WARNING] GET parameter 'id' is not injectable
+[00:00:10] [CRITICAL] all tested parameters do not appear to be injectable.
+
+[*] ending @ 00:00:11 /2026-05-31/
