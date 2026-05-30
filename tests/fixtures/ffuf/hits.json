@@ -1,0 +1,28 @@
+{
+  "commandline": "ffuf -w common.txt -u https://api.pure.app/FUZZ -of json -o out.json",
+  "time": "2026-05-31T00:00:00Z",
+  "results": [
+    {
+      "input": {"FUZZ": "admin"},
+      "position": 1,
+      "status": 200,
+      "length": 4521,
+      "words": 320,
+      "lines": 110,
+      "content-type": "text/html",
+      "url": "https://api.pure.app/admin",
+      "host": "api.pure.app"
+    },
+    {
+      "input": {"FUZZ": "login"},
+      "position": 2,
+      "status": 302,
+      "length": 0,
+      "words": 1,
+      "lines": 1,
+      "content-type": "text/html",
+      "url": "https://api.pure.app/login",
+      "host": "api.pure.app"
+    }
+  ]
+}
