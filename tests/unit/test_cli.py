@@ -36,3 +36,4 @@ def test_list_modules_prints_registered_phases() -> None:
     assert "recon" in result.output
     assert "discovery" in result.output
     assert "auth" in result.output
+    assert "authz" in result.output

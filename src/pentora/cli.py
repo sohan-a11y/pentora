@@ -6,6 +6,7 @@ from pathlib import Path
 import click
 
 from pentora.modules.auth import AuthModule
+from pentora.modules.authz import AuthzModule
 from pentora.modules.base import PhaseModule
 from pentora.modules.discovery import DiscoveryModule
 from pentora.modules.recon import ReconModule
@@ -16,6 +17,7 @@ PHASE_MAP: dict[str, type[PhaseModule]] = {
     "recon": ReconModule,
     "discovery": DiscoveryModule,
     "auth": AuthModule,
+    "authz": AuthzModule,
 }
 
 
