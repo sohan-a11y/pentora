@@ -1,0 +1,7 @@
+jwt_tool version 2.2.6
+
+[*] Testing 65000 passwords...
+
+[+] secret123 is the CORRECT key!
+You can tamper/fuzz the token contents (-T/-I) and sign it using:
+python3 jwt_tool.py [options] -S hs256 -p "secret123"

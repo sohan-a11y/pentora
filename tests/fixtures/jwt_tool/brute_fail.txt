@@ -1,0 +1,5 @@
+jwt_tool version 2.2.6
+
+[*] Testing 65000 passwords...
+
+[-] Key not in dictionary

