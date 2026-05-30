@@ -1,0 +1,12 @@
+{
+  "https://api.pure.app/search": {
+    "params": ["q", "page"],
+    "method": "GET",
+    "headers": {}
+  },
+  "https://api.pure.app/profile": {
+    "params": ["user_id"],
+    "method": "POST",
+    "headers": {}
+  }
+}
