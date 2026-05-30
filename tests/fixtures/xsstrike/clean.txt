@@ -1,0 +1,7 @@
+	XSStrike v3.1.5
+
+[~] Checking for DOM vulnerabilities
+[+] WAF Status: Offline
+[!] Testing parameter: q
+[-] No reflection found
+[-] No vectors after fuzzing

