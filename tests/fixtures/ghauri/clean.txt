@@ -1,0 +1,9 @@
+         _   _   ____ _   _ _____
+        | | | | / ___| | | |_   _|
+                       ghauri v1.3.2
+
+[00:00:01] [INFO] testing connection to the target URL
+[00:00:02] [INFO] testing if GET parameter 'id' is dynamic
+[00:00:03] [WARNING] GET parameter 'id' does not appear to be dynamic
+[00:00:09] [CRITICAL] all tested parameters do not appear to be injectable.
+[*] ending @ 00:00:11
