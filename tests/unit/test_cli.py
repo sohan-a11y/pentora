@@ -35,3 +35,4 @@ def test_list_modules_prints_registered_phases() -> None:
     assert result.exit_code == 0
     assert "recon" in result.output
     assert "discovery" in result.output
+    assert "auth" in result.output
