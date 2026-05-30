@@ -24,6 +24,7 @@ def main(ctx: click.Context) -> None:
 @click.option("--token-a", default=None)
 @click.option("--token-b", default=None)
 @click.option("--profile", default="generic")
+@click.option("--dry-run", is_flag=True, help="Print the plan and exit without scanning")
 def scan(
     url: str,
     output: str,
@@ -33,6 +34,7 @@ def scan(
     token_a: str | None,
     token_b: str | None,
     profile: str,
+    dry_run: bool = False,
 ) -> None:
     """Run a full pentest scan against URL."""
     import asyncio
@@ -72,6 +74,18 @@ def scan(
     requested = [p.strip() for p in phases.split(",") if p.strip()]
     if "all" in requested:
         requested = list(phase_map.keys())
+
+    if dry_run:
+        click.echo("=== DRY RUN ===")
+        click.echo(f"Target: {url}")
+        click.echo(f"Output: {output}")
+        click.echo(f"Scope include: {include}")
+        click.echo(f"Scope exclude: {exclude}")
+        click.echo(f"Phases: {requested}")
+        click.echo(f"Profile: {profile}")
+        click.echo("Reporters: json, markdown, html, finding_folder")
+        return
+
     modules = [phase_map[p]() for p in requested if p in phase_map]
 
     reporters = [JsonReporter(), MarkdownReporter(), HtmlReporter(), FindingFolderReporter()]
