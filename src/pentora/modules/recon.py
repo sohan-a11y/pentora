@@ -27,6 +27,10 @@ class ReconModule(PhaseModule):
         # 3. HTTP probe
         live = await HttpxWrapper(log_dir=log_dir).run(subs)
 
+        # 3a. Persist live host URLs for downstream phases (e.g. discovery).
+        live_hosts_file = ctx.output_dir / "recon" / "live-hosts.txt"
+        live_hosts_file.write_text("".join(f"{r.url}\n" for r in live))
+
         # 4. Emit one finding per live subdomain (informational)
         for r in live:
             tech = ", ".join(r.tech) or "unknown"
