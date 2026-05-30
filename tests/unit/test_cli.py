@@ -27,3 +27,11 @@ def test_cli_help_lists_subcommands() -> None:
     )
     for sub in subcommands:
         assert sub in result.output
+
+
+def test_list_modules_prints_registered_phases() -> None:
+    runner = CliRunner()
+    result = runner.invoke(main, ["list-modules"])
+    assert result.exit_code == 0
+    assert "recon" in result.output
+    assert "discovery" in result.output

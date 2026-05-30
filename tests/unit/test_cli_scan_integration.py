@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+import httpx
+import respx
 from click.testing import CliRunner
 
 from pentora.cli import main
@@ -27,3 +29,32 @@ def test_scan_command_produces_report(tmp_path: Path) -> None:
     assert (out / "summary.html").exists()
     assert (out / "summary.md").exists()
     assert (out / "findings").is_dir()
+
+
+@respx.mock
+def test_scan_with_discovery_phase(tmp_path: Path) -> None:
+    out = tmp_path / "report"
+    respx.get("https://api.x.com/.env").mock(return_value=httpx.Response(200))
+    respx.route().mock(return_value=httpx.Response(404))
+    with patch("pentora.modules.recon.SubfinderWrapper") as Sub, \
+         patch("pentora.modules.recon.HttpxWrapper") as Http, \
+         patch("pentora.modules.discovery.FfufWrapper") as Ffuf, \
+         patch("pentora.modules.discovery.ArjunWrapper") as Arjun, \
+         patch("pentora.modules.discovery.KatanaWrapper") as Katana:
+        Sub.return_value.run = AsyncMock(return_value=["api.x.com"])
+        Http.return_value.run = AsyncMock(return_value=[
+            HttpxResult(url="https://api.x.com", status_code=200, title="API"),
+        ])
+        Ffuf.return_value.run = AsyncMock(return_value=[])
+        Arjun.return_value.run = AsyncMock(return_value=[])
+        Katana.return_value.run = AsyncMock(return_value=[])
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "scan", "https://x.com",
+            "--output", str(out),
+            "--phases", "recon,discovery",
+            "--scope-include", "x.com,*.x.com",
+        ])
+    assert result.exit_code == 0, result.output
+    summary = (out / "summary.md").read_text()
+    assert "Environment file" in summary or "discovery" in summary.lower()
