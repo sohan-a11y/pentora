@@ -1,0 +1,5 @@
+{
+  "url": "https://api.pure.app/graphql",
+  "detected_engine": "apollo",
+  "detected_implementation": "Apollo Server"
+}
