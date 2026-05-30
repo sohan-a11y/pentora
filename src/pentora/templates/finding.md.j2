@@ -1,0 +1,27 @@
+# {{ f.title }}
+
+**Severity:** {{ f.severity.value | upper }} (CVSS {{ f.cvss.score }})
+**Module:** `{{ f.module }}`
+**Endpoint:** `{{ f.method }} {{ f.endpoint }}`
+**Discovered:** {{ f.discovered_at.isoformat() }}
+**Source:** {{ f.source }}
+
+## Description
+
+{{ f.description or "No description provided." }}
+
+## Evidence
+
+{{ f.evidence }}
+
+## Remediation
+
+{{ f.remediation or "TBD" }}
+
+## Reproduction
+
+See `request.http`, `response.http`, `poc.sh`, `poc.py` in this folder.
+
+## CVSS
+
+`{{ f.cvss.vector }}` — score **{{ f.cvss.score }}**

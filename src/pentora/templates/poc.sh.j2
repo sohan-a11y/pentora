@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Pentora PoC — {{ f.title }}
+# Severity: {{ f.severity.value }} ({{ f.cvss.score }})
+# Generated: {{ f.discovered_at.isoformat() }}
+
+set -euo pipefail
+
+ENDPOINT="{{ f.endpoint }}"
+METHOD="{{ f.method }}"
+
+echo "=== Reproducing: {{ f.title }} ==="
+echo "Expected evidence: {{ f.evidence | replace('"', "'") }}"
+echo ""
+
+curl -sS -X "$METHOD" "$ENDPOINT" -i || true
