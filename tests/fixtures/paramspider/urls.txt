@@ -1,0 +1,5 @@
+https://api.pure.app/search?q=FUZZ
+https://api.pure.app/profile?user_id=FUZZ&tab=FUZZ
+https://api.pure.app/items?id=FUZZ
+
+https://api.pure.app/filter?category=FUZZ
