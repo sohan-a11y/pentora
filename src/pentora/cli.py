@@ -92,6 +92,7 @@ def main(ctx: click.Context) -> None:
     help="Webhook for notifications: 'discord:URL' | 'slack:URL' | 'telegram:TOKEN:CHATID'",
 )
 @click.option("--resume", is_flag=True, help="Resume from state.json in output dir (skip completed phases)")
+@click.option("--cache-recon", default=None, help="Cache recon results for duration, e.g. '7d', '24h', '0' to disable")
 def scan(  # noqa: PLR0913
     url: str,
     output: str,
@@ -111,6 +112,7 @@ def scan(  # noqa: PLR0913
     reporter: str = "all",
     notify: str | None = None,
     resume: bool = False,
+    cache_recon: str | None = None,
 ) -> None:
     """Run a full pentest scan against URL."""
     import asyncio
@@ -141,6 +143,8 @@ def scan(  # noqa: PLR0913
     extra: dict[str, object] = {}
     if apk is not None:
         extra["apk_path"] = apk
+    if cache_recon is not None:
+        extra["cache_recon"] = cache_recon
 
     cfg = load_config()
     ctx = ScanContext(
