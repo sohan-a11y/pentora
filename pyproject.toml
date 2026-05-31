@@ -42,6 +42,8 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "types-PyYAML",
+    "build>=1.2",
+    "twine>=5.1",
 ]
 browser = ["playwright>=1.47"]
 ai = []  # LLM providers use httpx only — no extra deps needed
@@ -53,7 +55,16 @@ pentora = "pentora.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pentora = ["templates/*.html", "templates/*.css", "templates/*.j2"]
+pentora = [
+    "templates/*.html",
+    "templates/*.css",
+    "templates/*.j2",
+    "llm/prompts/*.txt",
+    "data/*.py",
+    "data/profiles/*.py",
+    "data/upload_payloads/*",
+    "security/*.py",
+]
 
 [tool.setuptools.dynamic]
 version = {attr = "pentora.version.__version__"}

@@ -1,0 +1,17 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+.mypy_cache
+.ruff_cache
+.pytest_cache
+dist/
+build/
+*.egg-info/
+.env
+.env.*
+pentora-out/
+tests/e2e/
+docs/
+*.md

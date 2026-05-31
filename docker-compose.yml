@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  pentora:
+    build: .
+    image: ghcr.io/pentora/pentora:latest
+    volumes:
+      - ./pentora-out:/output
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
+    depends_on:
+      - ollama
+    networks:
+      - pentora-net
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - pentora-net
+
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - pentora-net
+
+networks:
+  pentora-net:
+    driver: bridge
+
+volumes:
+  ollama-data:
