@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.3.0] — 2026-05-31
+
+### Phase 3: Proxy & LLM Integrations
+
+353 tests, 89% coverage. ruff + mypy --strict clean. Tagged `pentora-phase-3-complete`.
+
+#### Prep Refactors
+
+- `Orchestrator` now accepts optional `on_phase_start` / `on_phase_end` async callbacks
+- `ScanContext` gains `extra: dict[str, object]`, `proxy_url: str | None`, and `http_client()` factory
+
+#### Module Group 17 — Burp REST API (Tasks 74-76)
+
+- `src/pentora/proxy/base.py` — `ProxyClient` Protocol (6 methods)
+- `src/pentora/proxy/burp.py` — `BurpClient`: is_alive, add_to_scope, start_active_scan, wait_for_scan, get_findings, export_xml
+- `src/pentora/proxy/cert_install.py` — fetch + install Burp CA cert
+- `src/pentora/proxy/extension_installer.py` — print Burp REST API extension instructions
+- Orchestrator wired: after recon → add_to_scope; after discovery → start_active_scan; post-all → wait + collect + export
+
+#### Module Group 18 — ZAP REST (Task 77)
+
+- `src/pentora/proxy/zap.py` — `ZapClient`: all 6 ProxyClient methods via ZAP JSON API
+- Auto-detect mode: probe Burp 1337, then ZAP 8090; skip if neither responds
+- CLI: `--proxy burp|zap|none|auto` flag added to `scan` command
+
+#### Module Group 19 — LLM Provider Abstraction (Tasks 78-82)
+
+- `src/pentora/llm/base.py` — `LLMProvider` Protocol, `Message`, `LLMResponse` dataclasses
+- `src/pentora/llm/sanitizer.py` — PII stripper: host, IPv4/IPv6, email, UUID, JWT, hex tokens, URL numeric IDs
+- `src/pentora/llm/ollama.py` — Ollama local provider
+- `src/pentora/llm/openrouter.py` — OpenRouter (OpenAI-format) provider
+- `src/pentora/llm/nvidia.py` — NVIDIA NIM provider
+- `src/pentora/llm/factory.py` — `make_provider()` with last-choice caching at `~/.pentora/last-llm.yaml`
+
+#### Module Group 20 — AI Modules (Tasks 83-89)
+
+- `src/pentora/modules/ai/base.py` — `AIModule` base (provider, model, sanitize)
+- `src/pentora/modules/ai/logic_fuzzer.py` — LLM generates 5 business-logic test cases and executes them
+- `src/pentora/modules/ai/waf_mutator.py` — LLM generates WAF bypass payload variants
+- `src/pentora/modules/ai/report_polisher.py` — LLM writes executive summary to `executive-summary.md`
+- `src/pentora/modules/ai/pivot_advisor.py` — LLM suggests next attack steps for Critical/High findings
+- `src/pentora/modules/ai/auth_flow_reader.py` — LLM analyzes login page HTML → writes `recon/auth-flow.json`
+- `src/pentora/llm/prompts/` — 5 system prompt files
+
+#### CLI Additions
+
+- `--ai-mode` — enables LLM modules (requires `--llm-provider`)
+- `--llm-provider ollama|openrouter|nvidia|last`
+- `--llm-model` — model name passed to provider
+- `--no-sanitize-llm` — disable PII stripping
+- `--apk <path>` — path to Android APK (stored in `ctx.extra["apk_path"]`)
+- `--proxy burp|zap|none|auto`
+
+---
+
 ## [0.2.0] — 2026-05-31
 
 ### Phase 2: 16-Module Attack Suite
