@@ -307,7 +307,9 @@ def import_results(source: str, path: str) -> None:
 @main.command("list-profiles")
 def list_profiles() -> None:
     """List available profiles (dating, saas, fintech, ...)."""
-    click.echo("[stub] list-profiles")
+    from pentora.data.profiles import PROFILES
+    for name, profile in PROFILES.items():
+        click.echo(f"  {name:<15} {profile['description']}")
 
 
 @main.command("list-modules")
