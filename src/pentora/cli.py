@@ -9,6 +9,7 @@ from pentora.modules.auth import AuthModule
 from pentora.modules.authz import AuthzModule
 from pentora.modules.base import PhaseModule
 from pentora.modules.discovery import DiscoveryModule
+from pentora.modules.injection import InjectionModule
 from pentora.modules.recon import ReconModule
 from pentora.version import __version__
 
@@ -18,6 +19,7 @@ PHASE_MAP: dict[str, type[PhaseModule]] = {
     "discovery": DiscoveryModule,
     "auth": AuthModule,
     "authz": AuthzModule,
+    "injection": InjectionModule,
 }
 
 
