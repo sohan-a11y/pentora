@@ -1,0 +1,16 @@
+ _____                          _
+/  ___|                        | |
+\ `--. _ __ ___  _   _  __ _  __ _| | ___ _ __
+ `--. \ '_ ` _ \| | | |/ _` |/ _` | |/ _ \ '__|
+/\__/ / | | | | | |_| | (_| | (_| | |  __/ |
+\____/|_| |_| |_|\__,_|\__, |\__, |_|\___|_|
+                        __/ | __/ |
+                       |___/ |___/
+
+[+] URL           : https://t.example/
+[+] Method        : POST
+[+] Endpoint      : /
+[+] Payload       : CL.TE
+[+] Confidence    : High
+[!] Issue Found   : CL.TE timeout differential detected on https://t.example/
+    Log file saved to payloads/t.example/

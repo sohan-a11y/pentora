@@ -1,0 +1,8 @@
+ _____                          _
+/  ___|                        | |
+\ `--. _ __ ___  _   _  __ _  __ _| | ___ _ __
+
+[+] URL           : https://t.example/
+[+] Method        : POST
+[+] Payload       : CL.TE
+[-] No issues found on https://t.example/
