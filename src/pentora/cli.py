@@ -86,6 +86,11 @@ def main(ctx: click.Context) -> None:
         "burp_xml,zap_xml,har,finding_folder) or 'all'"
     ),
 )
+@click.option(
+    "--notify",
+    default=None,
+    help="Webhook for notifications: 'discord:URL' | 'slack:URL' | 'telegram:TOKEN:CHATID'",
+)
 def scan(  # noqa: PLR0913
     url: str,
     output: str,
@@ -103,6 +108,7 @@ def scan(  # noqa: PLR0913
     no_sanitize_llm: bool = False,
     apk: str | None = None,
     reporter: str = "all",
+    notify: str | None = None,
 ) -> None:
     """Run a full pentest scan against URL."""
     import asyncio
@@ -197,6 +203,18 @@ def scan(  # noqa: PLR0913
     orc = Orchestrator(modules=modules, reporters=reporters, proxy_client=proxy_client)
     asyncio.run(orc.run(ctx))
     click.echo(f"Scan complete. Reports written to {output}/")
+
+    if notify:
+        from pentora.notify import notify_scan_complete
+        from pentora.store import FindingsStore
+        store = FindingsStore(Path(output))
+        all_findings = asyncio.run(store.all())
+        n_crit = sum(1 for f in all_findings if f.severity.value == "critical")
+        n_high = sum(1 for f in all_findings if f.severity.value == "high")
+        try:
+            asyncio.run(notify_scan_complete(notify, url, len(all_findings), n_crit, n_high))
+        except Exception as exc:  # noqa: BLE001
+            click.echo(f"[warn] Notification failed: {exc}")
 
 
 def _resolve_proxy_client(proxy: str) -> object:
