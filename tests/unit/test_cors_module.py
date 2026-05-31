@@ -75,7 +75,10 @@ async def test_null_origin_reflected_flagged(tmp_path: Path) -> None:
     assert ctx.store
     await ctx.store.add(_endpoint_finding())
     findings = await CorsModule().run(ctx)
-    null_findings = [f for f in findings if "null" in f.evidence.lower() or "cors" in f.title.lower()]
+    null_findings = [
+        f for f in findings
+        if "null" in f.evidence.lower() or "cors" in f.title.lower()
+    ]
     assert len(null_findings) >= 1
 
 

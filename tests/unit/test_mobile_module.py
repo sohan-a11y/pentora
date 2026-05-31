@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -83,14 +83,18 @@ async def test_secret_in_decompiled_source_flagged(tmp_path: Path) -> None:
         "pentora.modules.mobile.ApktoolWrapper.run",
         new_callable=AsyncMock,
         return_value=[fake_decompile],
+    ), patch(
+        "pentora.modules.mobile.JadxWrapper.run",
+        new_callable=AsyncMock,
+        return_value=[],
     ):
-        with patch(
-            "pentora.modules.mobile.JadxWrapper.run",
-            new_callable=AsyncMock,
-            return_value=[],
-        ):
-            findings = await MobileModule().run(ctx)
+        findings = await MobileModule().run(ctx)
 
-    secret_findings = [f for f in findings if "secret" in f.title.lower() or "disclosure" in f.title.lower() or "aws" in f.title.lower()]
+    secret_findings = [
+        f for f in findings
+        if "secret" in f.title.lower()
+        or "disclosure" in f.title.lower()
+        or "aws" in f.title.lower()
+    ]
     assert len(secret_findings) >= 1
     assert any(f.severity in (Severity.HIGH, Severity.CRITICAL) for f in secret_findings)

@@ -36,7 +36,7 @@ class RateLimitModule(PhaseModule):
         all_findings = await ctx.store.all()
 
         # Collect unique auth-like endpoints
-        seen: set[str] = set()
+        seen: set[tuple[str, str]] = set()
         auth_endpoints: list[tuple[str, str]] = []
         for f in all_findings:
             key = (f.endpoint, f.method)

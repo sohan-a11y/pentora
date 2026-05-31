@@ -60,7 +60,10 @@ async def test_missing_x_content_type_flagged(tmp_path: Path) -> None:
         )
     )
     findings = await HeadersModule().run(_ctx(tmp_path))
-    xcto = [f for f in findings if "content-type" in f.title.lower() or "x-content" in f.title.lower()]
+    xcto = [
+        f for f in findings
+        if "content-type" in f.title.lower() or "x-content" in f.title.lower()
+    ]
     assert len(xcto) >= 1
 
 

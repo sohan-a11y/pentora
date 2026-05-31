@@ -11,6 +11,13 @@ from click.testing import CliRunner
 
 from pentora.cli import PHASE_MAP, main
 
+# Convenience shortcut to reduce patch line length
+_P = patch
+
+
+def _am() -> AsyncMock:
+    return AsyncMock(return_value=[])
+
 
 def test_phase_map_has_16_modules() -> None:
     """Task 70: confirm all 16 modules in PHASE_MAP."""
@@ -62,9 +69,10 @@ async def test_full_mocked_orchestrator_run(tmp_path: Path) -> None:
     from pentora.reporters.markdown import MarkdownReporter
     from pentora.scope import Scope
 
-    # Catch-all HTTP mock
+    # Catch-all HTTP mocks
+    hsts = {"strict-transport-security": "max-age=31536000"}
     respx.route(method="GET").mock(
-        return_value=httpx.Response(200, headers={"strict-transport-security": "max-age=31536000"}, text="<html></html>")
+        return_value=httpx.Response(200, headers=hsts, text="<html></html>")
     )
     respx.route(method="POST").mock(return_value=httpx.Response(429))
 
@@ -76,9 +84,7 @@ async def test_full_mocked_orchestrator_run(tmp_path: Path) -> None:
         scope=Scope(include=["t.example"]),
     )
 
-    # Build module instances from PHASE_MAP
     modules = [cls() for cls in PHASE_MAP.values()]
-
     reporters = [
         JsonReporter(),
         MarkdownReporter(),
@@ -86,23 +92,30 @@ async def test_full_mocked_orchestrator_run(tmp_path: Path) -> None:
         FindingFolderReporter(),
     ]
 
-    # Patch all subprocess-calling wrapper run() methods to return []
+    # Patch all subprocess-calling wrappers to return []
+    _recon = "pentora.modules.recon"
+    _disc = "pentora.modules.discovery"
+    _inj = "pentora.modules.injection"
+    _auth = "pentora.modules.auth"
+    _trans = "pentora.modules.transport"
+    _cloud = "pentora.modules.cloud"
+
     with (
-        patch("pentora.modules.recon.SubfinderWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.recon.HttpxWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.discovery.FfufWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.discovery.ArjunWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.discovery.KatanaWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.injection.SqlmapWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.injection.DalfoxWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.injection.GhauriWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.injection.CommixWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.injection.SmugglerWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.injection.XsstrikeWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.injection.OralyzerWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.auth.JwtToolWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.transport.TlsScanWrapper.run", new_callable=AsyncMock, return_value=[]),
-        patch("pentora.modules.cloud.S3ScannerWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_recon}.SubfinderWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_recon}.HttpxWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_disc}.FfufWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_disc}.ArjunWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_disc}.KatanaWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_inj}.SqlmapWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_inj}.DalfoxWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_inj}.GhauriWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_inj}.CommixWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_inj}.SmugglerWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_inj}.XsstrikeWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_inj}.OralyzerWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_auth}.JwtToolWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_trans}.TlsScanWrapper.run", new_callable=AsyncMock, return_value=[]),
+        _P(f"{_cloud}.S3ScannerWrapper.run", new_callable=AsyncMock, return_value=[]),
     ):
         orc = Orchestrator(modules=modules, reporters=reporters)
         await orc.run(ctx)

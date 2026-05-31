@@ -51,7 +51,10 @@ async def test_aws_key_in_js_raises_finding(tmp_path: Path) -> None:
     await ctx.store.add(_js_finding())
 
     findings = await DisclosureModule().run(ctx)
-    assert any("AWS" in f.title or "secret" in f.title.lower() or "disclosure" in f.title.lower() for f in findings)
+    assert any(
+        "AWS" in f.title or "secret" in f.title.lower() or "disclosure" in f.title.lower()
+        for f in findings
+    )
     assert any(f.severity in (Severity.HIGH, Severity.CRITICAL) for f in findings)
 
 
@@ -121,7 +124,12 @@ async def test_html_comment_with_password_flagged(tmp_path: Path) -> None:
     await ctx.store.add(html_finding)
 
     findings = await DisclosureModule().run(ctx)
-    assert any("comment" in f.title.lower() or "html" in f.title.lower() or "disclosure" in f.title.lower() for f in findings)
+    assert any(
+        "comment" in f.title.lower()
+        or "html" in f.title.lower()
+        or "disclosure" in f.title.lower()
+        for f in findings
+    )
 
 
 @pytest.mark.asyncio
