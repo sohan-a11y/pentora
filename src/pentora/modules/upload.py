@@ -91,8 +91,12 @@ class UploadModule(PhaseModule):
                         method="POST",
                         evidence="Uploaded shell.php returned HTTP " + str(resp.status_code),
                         cvss=CVSS.from_vector(_UPLOAD_RCE_VECTOR),
-                        description="The server accepts .php files which enables remote code execution.",
-                        remediation="Allow-list safe file extensions; store uploads outside webroot.",
+                        description=(
+                            "The server accepts .php files which enables remote code execution."
+                        ),
+                        remediation=(
+                            "Allow-list safe file extensions; store uploads outside webroot."
+                        ),
                     )
                 )
         except httpx.HTTPError:
@@ -111,7 +115,10 @@ class UploadModule(PhaseModule):
                         title="File extension bypass (.php.jpg) accepted",
                         endpoint=url,
                         method="POST",
-                        evidence="Uploaded shell.php.jpg: bypass returned HTTP " + str(resp.status_code),
+                        evidence=(
+                            "Uploaded shell.php.jpg: bypass returned HTTP "
+                            + str(resp.status_code)
+                        ),
                         cvss=CVSS.from_vector(_UPLOAD_RCE_VECTOR),
                         description="Extension bypass (double extension) may allow PHP execution.",
                         remediation="Validate the true file type, not just the extension suffix.",
@@ -135,7 +142,9 @@ class UploadModule(PhaseModule):
                         method="POST",
                         evidence="Uploaded xss.svg returned HTTP " + str(resp.status_code),
                         cvss=CVSS.from_vector(_UPLOAD_SVG_VECTOR),
-                        description="SVG files can contain inline script; serving them enables XSS.",
+                        description=(
+                            "SVG files can contain inline script; serving them enables XSS."
+                        ),
                         remediation="Block SVG uploads or sanitize SVG content server-side.",
                     )
                 )
@@ -143,12 +152,12 @@ class UploadModule(PhaseModule):
             pass
 
         # 4. Path traversal filename (informational probe -- no finding emitted)
-        try:
+        import contextlib
+        with contextlib.suppress(httpx.HTTPError):
             await client.post(
                 url,
                 files={"file": ("../../../etc/passwd.jpg", b"not a real image", "image/jpeg")},
             )
-        except httpx.HTTPError:
-            pass
 
         return findings
+

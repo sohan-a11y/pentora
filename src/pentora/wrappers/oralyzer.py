@@ -18,10 +18,10 @@ class OralyzerWrapper(ToolWrapper):
     install_check_argv = ["oralyzer", "--help"]
     _VULN = re.compile(r'\[VULNERABLE\]\s+(\S+)\s+\[redirect to:\s+([^\]]+)\]')
 
-    def build_argv(self, url: str) -> list[str]:  # type: ignore[override]
+    def build_argv(self, url: str) -> list[str]:
         return [self.tool_name, "-u", url]
 
-    def parse(self, stdout: str, stderr: str, returncode: int) -> list[OralyzerHit]:  # type: ignore[override]
+    def parse(self, stdout: str, stderr: str, returncode: int) -> list[OralyzerHit]:
         hits: list[OralyzerHit] = []
         for m in self._VULN.finditer(stdout):
             hits.append(OralyzerHit(url=m.group(1), redirect_to=m.group(2).strip()))

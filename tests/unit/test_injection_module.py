@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -14,14 +14,11 @@ from pentora.context import ScanContext
 from pentora.finding import CVSS, Finding, Severity
 from pentora.modules.injection import InjectionModule
 from pentora.scope import Scope
-from pentora.wrappers.commix import CommixFinding
 from pentora.wrappers.dalfox import DalfoxHit
 from pentora.wrappers.ghauri import GhauriFinding
 from pentora.wrappers.oralyzer import OralyzerHit
 from pentora.wrappers.smuggler import SmugglerFinding
 from pentora.wrappers.sqlmap import SqlmapFinding
-from pentora.wrappers.tplmap import TplmapFinding
-from pentora.wrappers.xsstrike import XsstrikeHit
 
 
 def _ctx(tmp_path: Path) -> ScanContext:
@@ -58,7 +55,9 @@ async def test_sqli_wrapper_invoked_for_numeric_param(tmp_path: Path) -> None:
     assert ctx.store is not None
     await ctx.store.add(_finding("https://t.example/items/42"))
 
-    sqlmap_result = [SqlmapFinding(parameter="id", dbms="MySQL", technique="time-based", evidence="vuln")]
+    sqlmap_result = [
+        SqlmapFinding(parameter="id", dbms="MySQL", technique="time-based", evidence="vuln")
+    ]
     ghauri_result: list[GhauriFinding] = []
 
     with (
@@ -67,7 +66,6 @@ async def test_sqli_wrapper_invoked_for_numeric_param(tmp_path: Path) -> None:
         patch("pentora.modules.injection.DalfoxWrapper") as MockDalfox,
         patch("pentora.modules.injection.XsstrikeWrapper") as MockXss,
         patch("pentora.modules.injection.CommixWrapper") as MockCommix,
-        patch("pentora.modules.injection.TplmapWrapper") as MockTplmap,
         patch("pentora.modules.injection.OralyzerWrapper") as MockOralyzer,
         patch("pentora.modules.injection.SmugglerWrapper") as MockSmuggler,
     ):
@@ -76,7 +74,6 @@ async def test_sqli_wrapper_invoked_for_numeric_param(tmp_path: Path) -> None:
         MockDalfox.return_value.run = AsyncMock(return_value=[])
         MockXss.return_value.run = AsyncMock(return_value=[])
         MockCommix.return_value.run = AsyncMock(return_value=[])
-        MockTplmap.return_value.run = AsyncMock(return_value=[])
         MockOralyzer.return_value.run = AsyncMock(return_value=[])
         MockSmuggler.return_value.run = AsyncMock(return_value=[])
 
@@ -105,7 +102,6 @@ async def test_xss_wrapper_invoked_for_search_param(tmp_path: Path) -> None:
         patch("pentora.modules.injection.DalfoxWrapper") as MockDalfox,
         patch("pentora.modules.injection.XsstrikeWrapper") as MockXss,
         patch("pentora.modules.injection.CommixWrapper") as MockCommix,
-        patch("pentora.modules.injection.TplmapWrapper") as MockTplmap,
         patch("pentora.modules.injection.OralyzerWrapper") as MockOralyzer,
         patch("pentora.modules.injection.SmugglerWrapper") as MockSmuggler,
     ):
@@ -114,7 +110,6 @@ async def test_xss_wrapper_invoked_for_search_param(tmp_path: Path) -> None:
         MockDalfox.return_value.run = AsyncMock(return_value=[xss_hit])
         MockXss.return_value.run = AsyncMock(return_value=[])
         MockCommix.return_value.run = AsyncMock(return_value=[])
-        MockTplmap.return_value.run = AsyncMock(return_value=[])
         MockOralyzer.return_value.run = AsyncMock(return_value=[])
         MockSmuggler.return_value.run = AsyncMock(return_value=[])
 
@@ -142,7 +137,6 @@ async def test_open_redirect_wrapper_invoked_for_redirect_param(tmp_path: Path) 
         patch("pentora.modules.injection.DalfoxWrapper") as MockDalfox,
         patch("pentora.modules.injection.XsstrikeWrapper") as MockXss,
         patch("pentora.modules.injection.CommixWrapper") as MockCommix,
-        patch("pentora.modules.injection.TplmapWrapper") as MockTplmap,
         patch("pentora.modules.injection.OralyzerWrapper") as MockOralyzer,
         patch("pentora.modules.injection.SmugglerWrapper") as MockSmuggler,
     ):
@@ -151,7 +145,6 @@ async def test_open_redirect_wrapper_invoked_for_redirect_param(tmp_path: Path) 
         MockDalfox.return_value.run = AsyncMock(return_value=[])
         MockXss.return_value.run = AsyncMock(return_value=[])
         MockCommix.return_value.run = AsyncMock(return_value=[])
-        MockTplmap.return_value.run = AsyncMock(return_value=[])
         MockOralyzer.return_value.run = AsyncMock(return_value=[redir_hit])
         MockSmuggler.return_value.run = AsyncMock(return_value=[])
 
@@ -181,7 +174,6 @@ async def test_smuggler_invoked_once_per_host(tmp_path: Path) -> None:
         patch("pentora.modules.injection.DalfoxWrapper") as MockDalfox,
         patch("pentora.modules.injection.XsstrikeWrapper") as MockXss,
         patch("pentora.modules.injection.CommixWrapper") as MockCommix,
-        patch("pentora.modules.injection.TplmapWrapper") as MockTplmap,
         patch("pentora.modules.injection.OralyzerWrapper") as MockOralyzer,
         patch("pentora.modules.injection.SmugglerWrapper") as MockSmuggler,
     ):
@@ -190,7 +182,6 @@ async def test_smuggler_invoked_once_per_host(tmp_path: Path) -> None:
         MockDalfox.return_value.run = AsyncMock(return_value=[])
         MockXss.return_value.run = AsyncMock(return_value=[])
         MockCommix.return_value.run = AsyncMock(return_value=[])
-        MockTplmap.return_value.run = AsyncMock(return_value=[])
         MockOralyzer.return_value.run = AsyncMock(return_value=[])
         MockSmuggler.return_value.run = AsyncMock(return_value=[smug_hit])
 
@@ -232,16 +223,21 @@ async def test_nosqli_injection_detected_on_json_body(tmp_path: Path) -> None:
         patch("pentora.modules.injection.DalfoxWrapper") as MockDalfox,
         patch("pentora.modules.injection.XsstrikeWrapper") as MockXss,
         patch("pentora.modules.injection.CommixWrapper") as MockCommix,
-        patch("pentora.modules.injection.TplmapWrapper") as MockTplmap,
         patch("pentora.modules.injection.OralyzerWrapper") as MockOralyzer,
         patch("pentora.modules.injection.SmugglerWrapper") as MockSmuggler,
     ):
-        for mock in (MockSqlmap, MockGhauri, MockDalfox, MockXss, MockCommix, MockTplmap, MockOralyzer, MockSmuggler):
+        all_mocks = (
+            MockSqlmap, MockGhauri, MockDalfox, MockXss,
+            MockCommix, MockOralyzer, MockSmuggler,
+        )
+        for mock in all_mocks:
             mock.return_value.run = AsyncMock(return_value=[])
 
         findings = await InjectionModule().run(ctx)
 
-    nosql_findings = [f for f in findings if "nosql" in f.module.lower() or "nosql" in f.title.lower()]
+    nosql_findings = [
+        f for f in findings if "nosql" in f.module.lower() or "nosql" in f.title.lower()
+    ]
     assert len(nosql_findings) >= 1
     assert any(f.severity in (Severity.HIGH, Severity.CRITICAL) for f in nosql_findings)
 
@@ -262,12 +258,14 @@ async def test_findings_persisted_to_store(tmp_path: Path) -> None:
         patch("pentora.modules.injection.DalfoxWrapper") as MockDalfox,
         patch("pentora.modules.injection.XsstrikeWrapper") as MockXss,
         patch("pentora.modules.injection.CommixWrapper") as MockCommix,
-        patch("pentora.modules.injection.TplmapWrapper") as MockTplmap,
         patch("pentora.modules.injection.OralyzerWrapper") as MockOralyzer,
         patch("pentora.modules.injection.SmugglerWrapper") as MockSmuggler,
     ):
         MockSqlmap.return_value.run = AsyncMock(return_value=[sqli])
-        for mock in (MockGhauri, MockDalfox, MockXss, MockCommix, MockTplmap, MockOralyzer, MockSmuggler):
+        other_mocks = (
+            MockGhauri, MockDalfox, MockXss, MockCommix, MockOralyzer, MockSmuggler
+        )
+        for mock in other_mocks:
             mock.return_value.run = AsyncMock(return_value=[])
 
         await InjectionModule().run(ctx)

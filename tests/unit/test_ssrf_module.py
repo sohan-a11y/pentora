@@ -41,7 +41,9 @@ async def test_aws_metadata_ssrf_critical(tmp_path: Path) -> None:
     """SSRF to AWS metadata endpoint returning ami-id is Critical."""
     # The app proxies our injected URL
     respx.get("https://t.example/fetch").mock(
-        return_value=httpx.Response(200, text="ami-id=ami-0123456789abcdef0\ninstance-id=i-1234567890abcdef0")
+        return_value=httpx.Response(
+            200, text="ami-id=ami-0abc\ninstance-id=i-0def\ninstance-type=t3.micro"
+        )
     )
 
     ctx = _ctx(tmp_path)
@@ -50,9 +52,13 @@ async def test_aws_metadata_ssrf_critical(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/fetch", params=["url"]))
 
     findings = await SsrfModule().run(ctx)
-    ssrf_findings = [f for f in findings if "ssrf" in f.module.lower() or "ssrf" in f.title.lower()]
+    ssrf_findings = [
+        f for f in findings if "ssrf" in f.module.lower() or "ssrf" in f.title.lower()
+    ]
     assert len(ssrf_findings) >= 1
-    high_or_critical = [f for f in ssrf_findings if f.severity in (Severity.HIGH, Severity.CRITICAL)]
+    high_or_critical = [
+        f for f in ssrf_findings if f.severity in (Severity.HIGH, Severity.CRITICAL)
+    ]
     assert len(high_or_critical) >= 1
 
 

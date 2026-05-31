@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from pentora.wrappers.oralyzer import OralyzerHit, OralyzerWrapper
 
 

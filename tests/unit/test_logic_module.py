@@ -50,7 +50,9 @@ async def test_negative_quantity_accepted_is_high(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/cart"))
 
     findings = await LogicModule().run(ctx)
-    neg_findings = [f for f in findings if "negative" in f.title.lower() or "quantity" in f.title.lower()]
+    neg_findings = [
+        f for f in findings if "negative" in f.title.lower() or "quantity" in f.title.lower()
+    ]
     assert len(neg_findings) >= 1
     assert any(f.severity in (Severity.HIGH, Severity.CRITICAL) for f in neg_findings)
 
@@ -69,7 +71,9 @@ async def test_negative_quantity_rejected_no_finding(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/cart"))
 
     findings = await LogicModule().run(ctx)
-    neg_findings = [f for f in findings if "negative" in f.title.lower() or "quantity" in f.title.lower()]
+    neg_findings = [
+        f for f in findings if "negative" in f.title.lower() or "quantity" in f.title.lower()
+    ]
     assert neg_findings == []
 
 
@@ -88,7 +92,9 @@ async def test_premium_bypass_reflected_is_high(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/profile", method="PUT"))
 
     findings = await LogicModule().run(ctx)
-    bypass_findings = [f for f in findings if "premium" in f.title.lower() or "bypass" in f.title.lower()]
+    bypass_findings = [
+        f for f in findings if "premium" in f.title.lower() or "bypass" in f.title.lower()
+    ]
     assert len(bypass_findings) >= 1
     assert any(f.severity in (Severity.HIGH, Severity.CRITICAL) for f in bypass_findings)
 
@@ -108,7 +114,9 @@ async def test_premium_bypass_not_reflected_no_finding(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/profile", method="PUT"))
 
     findings = await LogicModule().run(ctx)
-    bypass_findings = [f for f in findings if "premium" in f.title.lower() or "bypass" in f.title.lower()]
+    bypass_findings = [
+        f for f in findings if "premium" in f.title.lower() or "bypass" in f.title.lower()
+    ]
     assert bypass_findings == []
 
 
@@ -126,7 +134,9 @@ async def test_coupon_reuse_detected_is_medium(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/checkout"))
 
     findings = await LogicModule().run(ctx)
-    coupon_findings = [f for f in findings if "coupon" in f.title.lower() or "reuse" in f.title.lower()]
+    coupon_findings = [
+        f for f in findings if "coupon" in f.title.lower() or "reuse" in f.title.lower()
+    ]
     assert len(coupon_findings) >= 1
     assert any(f.severity in (Severity.MEDIUM, Severity.HIGH) for f in coupon_findings)
 
@@ -148,7 +158,9 @@ async def test_coupon_reuse_rejected_second_time_no_finding(tmp_path: Path) -> N
     await ctx.store.add(_finding("https://t.example/checkout"))
 
     findings = await LogicModule().run(ctx)
-    coupon_findings = [f for f in findings if "coupon" in f.title.lower() or "reuse" in f.title.lower()]
+    coupon_findings = [
+        f for f in findings if "coupon" in f.title.lower() or "reuse" in f.title.lower()
+    ]
     assert coupon_findings == []
 
 
@@ -195,7 +207,9 @@ async def test_dating_profile_direct_message_is_high(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/messages"))
 
     findings = await LogicModule().run(ctx)
-    dm_findings = [f for f in findings if "message" in f.title.lower() or "match" in f.title.lower()]
+    dm_findings = [
+        f for f in findings if "message" in f.title.lower() or "match" in f.title.lower()
+    ]
     assert len(dm_findings) >= 1
     assert any(f.severity in (Severity.HIGH, Severity.CRITICAL) for f in dm_findings)
 
@@ -214,5 +228,8 @@ async def test_integer_overflow_accepted_is_medium(tmp_path: Path) -> None:
     await ctx.store.add(_finding("https://t.example/cart"))
 
     findings = await LogicModule().run(ctx)
-    overflow_findings = [f for f in findings if "overflow" in f.title.lower() or "integer" in f.title.lower()]
+    overflow_findings = [
+        f for f in findings
+        if "overflow" in f.title.lower() or "integer" in f.title.lower()
+    ]
     assert len(overflow_findings) >= 1

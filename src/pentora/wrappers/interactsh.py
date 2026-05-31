@@ -19,10 +19,10 @@ class InteractshWrapper(ToolWrapper):
     _TOKEN_RE = re.compile(r'Your unique interactsh.subdomain:\s*(\S+)', re.I)
     _HIT_RE = re.compile(r'Received interaction.*?from\s+(\S+)', re.I)
 
-    def build_argv(self) -> list[str]:  # type: ignore[override]
+    def build_argv(self) -> list[str]:
         return [self.tool_name, "-v", "-o", "/dev/null"]
 
-    def parse(self, stdout: str, stderr: str, returncode: int) -> list[InteractshSession]:  # type: ignore[override]
+    def parse(self, stdout: str, stderr: str, returncode: int) -> list[InteractshSession]:
         combined = stdout + stderr
         token_m = self._TOKEN_RE.search(combined)
         token = token_m.group(1) if token_m else "unknown.oast.fun"

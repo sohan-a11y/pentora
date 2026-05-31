@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import re
+from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
@@ -18,7 +19,6 @@ from pentora.wrappers.ghauri import GhauriFinding, GhauriWrapper
 from pentora.wrappers.oralyzer import OralyzerHit, OralyzerWrapper
 from pentora.wrappers.smuggler import SmugglerFinding, SmugglerWrapper
 from pentora.wrappers.sqlmap import SqlmapFinding, SqlmapWrapper
-from pentora.wrappers.tplmap import TplmapFinding, TplmapWrapper
 from pentora.wrappers.xsstrike import XsstrikeHit, XsstrikeWrapper
 
 # CVSS vectors per Phase 2 plan
@@ -41,10 +41,13 @@ def _host(url: str) -> str:
     return urlparse(url).netloc
 
 
+_SQLI_PARAMS = frozenset({"id", "pk", "user_id", "item_id", "order_id"})
+
+
 def _is_numeric_candidate(cand: Candidate) -> bool:
     if _NUMERIC_PATH_RE.search(cand.url):
         return True
-    return any(p.isdigit() or p in ("id", "pk", "user_id", "item_id", "order_id") for p in cand.params)
+    return any(p.isdigit() or p in _SQLI_PARAMS for p in cand.params)
 
 
 def _has_redirect_param(cand: Candidate) -> bool:
@@ -85,8 +88,6 @@ class InjectionModule(PhaseModule):
         return findings
 
     async def _run_per_candidate(self, cand: Candidate, log_dir: object) -> list[Finding]:
-        from pathlib import Path
-
         ld = Path(str(log_dir))
         findings: list[Finding] = []
 
@@ -101,8 +102,7 @@ class InjectionModule(PhaseModule):
 
         return findings
 
-    async def _run_sqli(self, cand: Candidate, log_dir: "Path") -> list[Finding]:
-        from pathlib import Path as _Path
+    async def _run_sqli(self, cand: Candidate, log_dir: Path) -> list[Finding]:
         findings: list[Finding] = []
         for WrapperClass in (SqlmapWrapper, GhauriWrapper):
             wrapper = WrapperClass(log_dir=log_dir)
@@ -127,7 +127,7 @@ class InjectionModule(PhaseModule):
                         )
         return findings
 
-    async def _run_xss(self, cand: Candidate, log_dir: "Path") -> list[Finding]:
+    async def _run_xss(self, cand: Candidate, log_dir: Path) -> list[Finding]:
         findings: list[Finding] = []
         for WrapperClass in (DalfoxWrapper, XsstrikeWrapper):
             wrapper = WrapperClass(log_dir=log_dir)
@@ -156,13 +156,15 @@ class InjectionModule(PhaseModule):
                                 method=cand.method,
                                 evidence=f"Vector: {r.payload}",
                                 cvss=CVSS.from_vector(_XSS_VECTOR),
-                                description=f"XSStrike identified a working vector for '{r.param}'.",
+                                description=(
+                                    f"XSStrike identified a working vector for '{r.param}'."
+                                ),
                                 remediation="Encode output; enforce Content-Security-Policy.",
                             )
                         )
         return findings
 
-    async def _run_cmdi(self, cand: Candidate, log_dir: "Path") -> list[Finding]:
+    async def _run_cmdi(self, cand: Candidate, log_dir: Path) -> list[Finding]:
         findings: list[Finding] = []
         wrapper = CommixWrapper(log_dir=log_dir)
         with contextlib.suppress(ToolNotInstalled):
@@ -177,13 +179,15 @@ class InjectionModule(PhaseModule):
                             method=cand.method,
                             evidence=r.evidence,
                             cvss=CVSS.from_vector(_SSTI_VECTOR),
-                            description=f"OS command injection via '{r.parameter}' ({r.technique}).",
+                            description=(
+                                f"OS command injection via '{r.parameter}' ({r.technique})."
+                            ),
                             remediation="Never pass user input to shell commands; use safe APIs.",
                         )
                     )
         return findings
 
-    async def _run_redirect(self, cand: Candidate, log_dir: "Path") -> list[Finding]:
+    async def _run_redirect(self, cand: Candidate, log_dir: Path) -> list[Finding]:
         findings: list[Finding] = []
         wrapper = OralyzerWrapper(log_dir=log_dir)
         with contextlib.suppress(ToolNotInstalled):
@@ -198,13 +202,15 @@ class InjectionModule(PhaseModule):
                             method=cand.method,
                             evidence=f"Redirects to: {r.redirect_to}",
                             cvss=CVSS.from_vector(_REDIR_VECTOR),
-                            description=f"URL parameter accepts arbitrary external redirect targets.",
+                            description=(
+                                "URL parameter accepts arbitrary external redirect targets."
+                            ),
                             remediation="Allow-list redirect destinations; reject arbitrary URLs.",
                         )
                     )
         return findings
 
-    async def _run_smuggler(self, url: str, log_dir: "Path") -> list[Finding]:
+    async def _run_smuggler(self, url: str, log_dir: Path) -> list[Finding]:
         base = f"{urlparse(url).scheme}://{urlparse(url).netloc}/"
         findings: list[Finding] = []
         wrapper = SmugglerWrapper(log_dir=log_dir)

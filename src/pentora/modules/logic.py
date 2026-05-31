@@ -153,8 +153,13 @@ class LogicModule(PhaseModule):
                     method="PUT",
                     evidence=f"Fields {sorted(reflected)} reflected after PUT.",
                     cvss=CVSS.from_vector(_PREMIUM_VECTOR),
-                    description="Privileged subscription fields accepted and reflected via profile update.",
-                    remediation="Deny-list privilege-elevation fields from client-supplied updates.",
+                    description=(
+                    "Privileged subscription fields accepted"
+                    " and reflected via profile update."
+                ),
+                    remediation=(
+                        "Deny-list privilege-elevation fields from client-supplied updates."
+                    ),
                 )
             ]
         return []
@@ -209,7 +214,8 @@ class LogicModule(PhaseModule):
             return []
 
         unique_statuses = set(status_codes)
-        if len(unique_statuses) > 1 and max(status_codes.count(s) for s in unique_statuses if s != 200) > 3:
+        many_non_200 = max((status_codes.count(s) for s in unique_statuses if s != 200), default=0)
+        if len(unique_statuses) > 1 and many_non_200 > 3:
             return [
                 Finding(
                     module="logic.race_condition",
@@ -219,7 +225,9 @@ class LogicModule(PhaseModule):
                     evidence=f"25 concurrent requests returned {unique_statuses} status codes.",
                     cvss=CVSS.from_vector(_RACE_VECTOR),
                     description="Concurrent requests produce inconsistent status codes.",
-                    remediation="Use database transactions and optimistic locking for critical actions.",
+                    remediation=(
+                        "Use database transactions and optimistic locking for critical actions."
+                    ),
                 )
             ]
         return []
@@ -269,4 +277,6 @@ class LogicModule(PhaseModule):
                 )
             ]
         return []
+
+
 

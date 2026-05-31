@@ -94,10 +94,17 @@ class SsrfModule(PhaseModule):
                             title="SSRF to AWS EC2 instance metadata",
                             endpoint=cand.url,
                             method=cand.method,
-                            evidence=f"Param '{url_param}' fetched {target}: found AWS metadata indicators.",
+                            evidence=(
+                                f"Param '{url_param}' fetched {target}:"
+                                " found AWS metadata indicators."
+                            ),
                             cvss=CVSS.from_vector(_SSRF_META_VECTOR),
-                            description="Server fetched AWS EC2 metadata; credentials may be exposed.",
-                            remediation="Enforce IMDSv2; block SSRF via allow-list of outbound targets.",
+                            description=(
+                                "Server fetched AWS EC2 metadata; credentials may be exposed."
+                            ),
+                            remediation=(
+                                "Enforce IMDSv2; block SSRF via allow-list of outbound targets."
+                            ),
                         )
                     )
                     return findings  # one metadata hit is enough evidence
@@ -108,10 +115,15 @@ class SsrfModule(PhaseModule):
                             title="SSRF to GCP instance metadata",
                             endpoint=cand.url,
                             method=cand.method,
-                            evidence=f"Param '{url_param}' fetched {target}: found GCP metadata indicators.",
+                            evidence=(
+                                f"Param '{url_param}' fetched {target}:"
+                                " found GCP metadata indicators."
+                            ),
                             cvss=CVSS.from_vector(_SSRF_META_VECTOR),
                             description="Server fetched GCP instance metadata.",
-                            remediation="Block SSRF via outbound allow-list; enforce metadata headers.",
+                            remediation=(
+                                "Block SSRF via outbound allow-list; enforce metadata headers."
+                            ),
                         )
                     )
                     return findings
@@ -140,11 +152,17 @@ class SsrfModule(PhaseModule):
                             method=cand.method,
                             evidence=(
                                 f"Param '{url_param}' targeting {internal_target} "
-                                f"returned distinct response ({len(body)}B vs baseline {len(baseline_body)}B)."
+                                f"returned distinct response ({len(body)}B"
+                                f" vs baseline {len(baseline_body)}B)."
                             ),
                             cvss=CVSS.from_vector(_SSRF_INTERNAL_VECTOR),
-                            description="The server made an internal network request on behalf of the attacker.",
-                            remediation="Validate and restrict URLs; use an outbound proxy allow-list.",
+                            description=(
+                                "The server made an internal network request"
+                                " on behalf of the attacker."
+                            ),
+                            remediation=(
+                                "Validate and restrict URLs; use an outbound proxy allow-list."
+                            ),
                         )
                     )
                     break
@@ -152,3 +170,7 @@ class SsrfModule(PhaseModule):
                 pass
 
         return findings
+
+
+
+
