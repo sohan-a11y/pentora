@@ -1,0 +1,20 @@
+[
+  {
+    "id": "cipher_order",
+    "severity": "LOW",
+    "finding": "server does not enforce cipher order",
+    "cve": ""
+  },
+  {
+    "id": "SSLv3",
+    "severity": "HIGH",
+    "finding": "SSLv3 is offered (deprecated)",
+    "cve": "CVE-2014-3566"
+  },
+  {
+    "id": "BEAST",
+    "severity": "MEDIUM",
+    "finding": "BEAST attack (CVE-2011-3389): VULNERABLE (CBC-based cipher in TLSv1.0)",
+    "cve": "CVE-2011-3389"
+  }
+]

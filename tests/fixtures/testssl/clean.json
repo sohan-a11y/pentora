@@ -1,0 +1,8 @@
+[
+  {
+    "id": "cipher_order",
+    "severity": "OK",
+    "finding": "server enforces cipher order",
+    "cve": ""
+  }
+]

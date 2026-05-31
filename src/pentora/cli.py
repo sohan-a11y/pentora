@@ -11,6 +11,7 @@ from pentora.modules.base import PhaseModule
 from pentora.modules.discovery import DiscoveryModule
 from pentora.modules.disclosure import DisclosureModule
 from pentora.modules.injection import InjectionModule
+from pentora.modules.transport import TransportModule
 from pentora.modules.logic import LogicModule
 from pentora.modules.recon import ReconModule
 from pentora.modules.ssrf import SsrfModule
@@ -28,6 +29,7 @@ PHASE_MAP: dict[str, type[PhaseModule]] = {
     "ssrf": SsrfModule,
     "logic": LogicModule,
     "disclosure": DisclosureModule,
+    "transport": TransportModule,
 }
 
 
