@@ -1,8 +1,10 @@
 """ScanContext — passed to every module so they share state cleanly."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+
+import httpx
 
 from pentora.config import Config
 from pentora.scope import Scope
@@ -19,6 +21,8 @@ class ScanContext:
     token_a: str | None = None
     token_b: str | None = None
     store: FindingsStore | None = None
+    extra: dict[str, object] = field(default_factory=dict)
+    proxy_url: str | None = None
 
     async def prepare(self) -> None:
         for sub in ("findings", "logs", "logs/tool-invocations", "recon", "recon/screenshots"):
@@ -26,6 +30,12 @@ class ScanContext:
         self._write_scope_lock()
         self.store = FindingsStore(self.output_dir / "findings.db")
         await self.store.init()
+
+    def http_client(self) -> httpx.AsyncClient:
+        """Return an httpx client; routes through proxy_url if set."""
+        if self.proxy_url:
+            return httpx.AsyncClient(proxy=self.proxy_url, verify=False)  # noqa: S501
+        return httpx.AsyncClient()
 
     def _write_scope_lock(self) -> None:
         lines = ["# scope.lock — exact scope used for this run"]
