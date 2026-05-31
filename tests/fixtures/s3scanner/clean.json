@@ -1,0 +1,10 @@
+[
+  {
+    "bucket": "pure-private",
+    "exists": true,
+    "public_read": false,
+    "public_write": false,
+    "auth_read": true,
+    "region": "us-east-1"
+  }
+]

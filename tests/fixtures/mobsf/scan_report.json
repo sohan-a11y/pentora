@@ -1,0 +1,21 @@
+{
+  "title": "Static Analysis",
+  "app_name": "TestApp",
+  "package_name": "com.example.testapp",
+  "security_score": "42",
+  "high": [
+    {
+      "title": "Hardcoded Credentials",
+      "description": "AWS key found in source",
+      "severity": "high"
+    }
+  ],
+  "medium": [
+    {
+      "title": "Insecure Data Storage",
+      "description": "SharedPreferences used without encryption",
+      "severity": "medium"
+    }
+  ],
+  "low": []
+}

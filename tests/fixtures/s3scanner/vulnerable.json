@@ -1,0 +1,18 @@
+[
+  {
+    "bucket": "pure-app",
+    "exists": true,
+    "public_read": true,
+    "public_write": false,
+    "auth_read": false,
+    "region": "us-east-1"
+  },
+  {
+    "bucket": "pureapp-assets",
+    "exists": true,
+    "public_read": true,
+    "public_write": true,
+    "auth_read": false,
+    "region": "us-west-2"
+  }
+]

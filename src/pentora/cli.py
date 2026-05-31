@@ -11,8 +11,11 @@ from pentora.modules.base import PhaseModule
 from pentora.modules.discovery import DiscoveryModule
 from pentora.modules.disclosure import DisclosureModule
 from pentora.modules.injection import InjectionModule
+from pentora.modules.cloud import CloudModule
 from pentora.modules.cors import CorsModule
 from pentora.modules.headers import HeadersModule
+from pentora.modules.mobile import MobileModule
+from pentora.modules.ratelimit import RateLimitModule
 from pentora.modules.takeover import TakeoverModule
 from pentora.modules.transport import TransportModule
 from pentora.modules.logic import LogicModule
@@ -36,6 +39,9 @@ PHASE_MAP: dict[str, type[PhaseModule]] = {
     "headers": HeadersModule,
     "cors": CorsModule,
     "takeover": TakeoverModule,
+    "ratelimit": RateLimitModule,
+    "mobile": MobileModule,
+    "cloud": CloudModule,
 }
 
 

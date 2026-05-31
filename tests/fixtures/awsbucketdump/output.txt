@@ -1,0 +1,3 @@
+Found public bucket: pure-data
+  - READ: public
+  - WRITE: restricted
