@@ -1,0 +1,4 @@
+Your unique interactsh subdomain: abc123xyz.oast.fun
+Listening for OOB interactions...
+Received interaction from 203.0.113.42 at 2026-05-31T09:00:00Z [dns]
+Received interaction from 198.51.100.7 at 2026-05-31T09:00:05Z [http]
