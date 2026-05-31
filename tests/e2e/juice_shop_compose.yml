@@ -1,0 +1,15 @@
+version: "3.9"
+# E2E test environment — requires Docker
+# Run: docker-compose -f juice_shop_compose.yml up -d
+# Then: bash tests/e2e/test_juice_shop.sh
+
+services:
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
