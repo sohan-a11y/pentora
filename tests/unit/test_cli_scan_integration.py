@@ -9,6 +9,37 @@ from pentora.cli import main
 from pentora.wrappers.httpx_tool import HttpxResult
 
 
+def test_scan_ai_mode_requires_llm_provider(tmp_path: Path) -> None:
+    """--ai-mode without --llm-provider should error."""
+    out = tmp_path / "report"
+    runner = CliRunner()
+    result = runner.invoke(main, [
+        "scan", "https://x.com",
+        "--output", str(out),
+        "--phases", "recon",
+        "--ai-mode",
+    ])
+    assert result.exit_code != 0
+    assert "llm-provider" in result.output.lower() or "UsageError" in str(result.exception)
+
+
+def test_scan_no_ai_mode_skips_ai_modules(tmp_path: Path) -> None:
+    """Without --ai-mode, AI modules must not be loaded."""
+    out = tmp_path / "report"
+    with patch("pentora.modules.recon.SubfinderWrapper") as Sub, \
+         patch("pentora.modules.recon.HttpxWrapper") as Http:
+        Sub.return_value.run = AsyncMock(return_value=[])
+        Http.return_value.run = AsyncMock(return_value=[])
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "scan", "https://x.com",
+            "--output", str(out),
+            "--phases", "recon",
+            "--scope-include", "x.com",
+        ])
+    assert result.exit_code == 0, result.output
+
+
 def test_scan_command_produces_report(tmp_path: Path) -> None:
     out = tmp_path / "report"
     with patch("pentora.modules.recon.SubfinderWrapper") as Sub, \

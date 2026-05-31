@@ -159,9 +159,29 @@ def scan(  # noqa: PLR0913
 
     modules: list[PhaseModule] = [PHASE_MAP[p]() for p in requested if p in PHASE_MAP]
 
-    # Resolve proxy client (returns BurpClient | ZapClient | None)
+    # Append AI modules when --ai-mode is enabled
+    if ai_mode:
+        from pentora.llm.factory import make_provider
+        from pentora.modules.ai.auth_flow_reader import AuthFlowReaderModule
+        from pentora.modules.ai.logic_fuzzer import LogicFuzzerModule
+        from pentora.modules.ai.pivot_advisor import PivotAdvisorModule
+        from pentora.modules.ai.report_polisher import ReportPolisherModule
+        from pentora.modules.ai.waf_mutator import WafMutatorModule
+
+        effective_model = llm_model or "default"
+        provider = make_provider(str(llm_provider), effective_model)
+        sanitize_llm = not no_sanitize_llm
+        modules += [
+            LogicFuzzerModule(provider=provider, model=effective_model, sanitize=sanitize_llm),
+            WafMutatorModule(provider=provider, model=effective_model, sanitize=sanitize_llm),
+            AuthFlowReaderModule(provider=provider, model=effective_model, sanitize=sanitize_llm),
+            PivotAdvisorModule(provider=provider, model=effective_model, sanitize=sanitize_llm),
+            ReportPolisherModule(provider=provider, model=effective_model, sanitize=sanitize_llm),
+        ]
+
+    # Resolve proxy client (returns BurpClient | ZapClient | None, all satisfy ProxyClient)
     resolved = _resolve_proxy_client(proxy)
-    proxy_client: ProxyClient | None = resolved if isinstance(resolved, ProxyClient) else None  # type: ignore[misc]
+    proxy_client: ProxyClient | None = resolved  # type: ignore[assignment]
 
     reporters: list[Reporter] = [
         JsonReporter(),
