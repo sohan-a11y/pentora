@@ -317,3 +317,52 @@ def list_modules() -> None:
     """List available phase modules."""
     for key in PHASE_MAP:
         click.echo(key)
+
+
+@main.command("compare")
+@click.argument("dir_a", type=click.Path(exists=True))
+@click.argument("dir_b", type=click.Path(exists=True))
+def compare(dir_a: str, dir_b: str) -> None:
+    """Diff two scan result directories — show NEW, RESOLVED, and PERSISTING findings."""
+    import asyncio
+    import json as _json
+    from pentora.store import FindingsStore
+
+    async def _run() -> None:
+        store_a = FindingsStore(Path(dir_a) / "findings.db")
+        store_b = FindingsStore(Path(dir_b) / "findings.db")
+        await store_a.init()
+        await store_b.init()
+        findings_a = await store_a.all()
+        findings_b = await store_b.all()
+
+        ids_a = {f.id: f for f in findings_a}
+        ids_b = {f.id: f for f in findings_b}
+
+        new = [f for fid, f in ids_b.items() if fid not in ids_a]
+        resolved = [f for fid, f in ids_a.items() if fid not in ids_b]
+        persists = [f for fid, f in ids_b.items() if fid in ids_a]
+
+        click.echo(f"\n=== NEW ({len(new)}) ===")
+        for f in new:
+            click.echo(f"  [{f.severity.value.upper()}] {f.title} — {f.endpoint}")
+
+        click.echo(f"\n=== RESOLVED ({len(resolved)}) ===")
+        for f in resolved:
+            click.echo(f"  [{f.severity.value.upper()}] {f.title} — {f.endpoint}")
+
+        click.echo(f"\n=== PERSISTS ({len(persists)}) ===")
+        for f in persists:
+            click.echo(f"  [{f.severity.value.upper()}] {f.title} — {f.endpoint}")
+
+        comparison = {
+            "dir_a": dir_a,
+            "dir_b": dir_b,
+            "new": [{"id": f.id, "title": f.title, "severity": f.severity.value} for f in new],
+            "resolved": [{"id": f.id, "title": f.title, "severity": f.severity.value} for f in resolved],
+            "persists": [{"id": f.id, "title": f.title, "severity": f.severity.value} for f in persists],
+        }
+        Path("comparison.json").write_text(_json.dumps(comparison, indent=2))
+        click.echo("\ncomparison.json written.")
+
+    asyncio.run(_run())
