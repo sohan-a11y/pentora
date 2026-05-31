@@ -272,21 +272,33 @@ def _resolve_proxy_client(proxy: str) -> object:
 
 
 @main.command()
-def setup() -> None:
+@click.option("--skip-go", is_flag=True, help="Skip Go tool installation")
+@click.option("--skip-docker", is_flag=True, help="Skip Docker image pulls")
+def setup(skip_go: bool = False, skip_docker: bool = False) -> None:
     """Install all required tools on Kali."""
-    click.echo("[stub] setup")
+    from pentora.installer import run_installer
+    click.echo("Installing Pentora tools...")
+    run_installer(skip_go=skip_go, skip_docker=skip_docker)
+    click.echo("Setup complete.")
 
 
 @main.command()
 def doctor() -> None:
     """Diagnose missing tools and misconfigurations."""
-    click.echo("[stub] doctor")
+    from pentora.installer import run_doctor
+    missing = run_doctor()
+    if missing > 0:
+        raise SystemExit(missing)
 
 
 @main.command()
 def update() -> None:
     """Update nuclei templates, wordlists, fingerprints."""
-    click.echo("[stub] update")
+    import subprocess
+    from pentora.installer import _run_cmd
+    click.echo("Updating nuclei templates...")
+    ok = _run_cmd(["nuclei", "-update-templates"])  # noqa: S603
+    click.echo("[ok] nuclei templates updated" if ok else "[warn] nuclei template update failed")
 
 
 @main.command()
