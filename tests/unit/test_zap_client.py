@@ -9,7 +9,6 @@ from httpx import Response
 
 from pentora.proxy.zap import ZapClient
 
-
 BASE = "http://127.0.0.1:8090"
 
 

@@ -6,7 +6,6 @@ from pathlib import Path
 from pentora.wrappers.awsbucketdump import AwsBucketDumpWrapper, BucketDumpResult
 from pentora.wrappers.s3scanner import S3BucketFinding, S3ScannerWrapper
 
-
 # --- s3scanner ---
 
 def test_s3scanner_parses_vulnerable_json() -> None:

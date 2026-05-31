@@ -23,7 +23,7 @@ class FaradayReporter(Reporter):
 
         hosts = []
         for host, host_findings in by_host.items():
-            vulns = []
+            vulns: list[dict[str, object]] = []
             for f in host_findings:
                 vulns.append({
                     "name": f.title,

@@ -11,7 +11,7 @@ from httpx import Response
 from pentora.config import Config
 from pentora.context import ScanContext
 from pentora.finding import CVSS, Finding
-from pentora.llm.base import LLMProvider, LLMResponse, Message
+from pentora.llm.base import LLMResponse, Message
 from pentora.modules.ai.auth_flow_reader import AuthFlowReaderModule
 from pentora.modules.ai.logic_fuzzer import LogicFuzzerModule
 from pentora.modules.ai.pivot_advisor import PivotAdvisorModule

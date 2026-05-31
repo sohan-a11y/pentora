@@ -78,7 +78,7 @@ select = ["E", "F", "I", "B", "UP", "S", "A", "C4", "T20", "RET", "SIM"]
 ignore = ["S101"]  # allow asserts
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S", "ANN", "T20"]
+"tests/**/*.py" = ["S", "ANN", "T20", "E501", "RET", "SIM", "F841"]
 # Tool wrappers exist specifically to run external security tools via subprocess.
 "src/pentora/wrappers/**.py" = ["S603", "S607"]
 

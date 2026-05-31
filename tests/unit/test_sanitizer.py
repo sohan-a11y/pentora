@@ -1,8 +1,6 @@
 """Tests for LLM PII sanitizer."""
 from __future__ import annotations
 
-import pytest
-
 from pentora.llm.sanitizer import sanitize
 
 

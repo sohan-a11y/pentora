@@ -1,9 +1,9 @@
 """Tests for webhook notification system."""
 from __future__ import annotations
 
+import httpx
 import pytest
 import respx
-import httpx
 
 from pentora.finding import CVSS, Finding
 from pentora.notify import notify, notify_finding, notify_scan_complete

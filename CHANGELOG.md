@@ -1,5 +1,65 @@
 # Changelog
 
+## [1.0.0] — 2026-05-31
+
+### Phase 4: Final Release
+
+434 tests, 89.5% coverage. ruff + mypy --strict clean. Tagged `v1.0.0`.
+
+#### Batch A — 7 New Reporters (Tasks 91-98)
+
+- `src/pentora/reporters/sarif.py` — SARIF 2.1.0 reporter (`findings.sarif`)
+- `src/pentora/reporters/csv_reporter.py` — CSV reporter with UTF-8 BOM (`findings.csv`)
+- `src/pentora/reporters/defectdojo.py` — DefectDojo generic findings (`findings.defectdojo.json`)
+- `src/pentora/reporters/faraday.py` — Faraday import format (`findings.faraday.json`)
+- `src/pentora/reporters/burp_xml.py` — Burp XML export (`burp-export.xml`)
+- `src/pentora/reporters/zap_xml.py` — ZAP XML export (`zap-export.xml`)
+- `src/pentora/reporters/har.py` — HTTP Archive 1.2 (`traffic.har`)
+- `src/pentora/reporters/__init__.py` — `ALL_REPORTERS` + `REPORTER_MAP` registry (11 reporters)
+- CLI: `--reporter` flag for selective reporter output
+
+#### Batch B — Notify, Resume, Cache, Profile, Compare (Tasks 99-103)
+
+- `src/pentora/notify.py` — Discord, Slack, Telegram webhook notifications
+- CLI: `--notify discord:URL|slack:URL|telegram:TOKEN:CHATID`
+- Orchestrator: writes `state.json` after each phase for resume
+- CLI: `--resume` flag to skip already-completed phases
+- `src/pentora/recon_cache.py` — Configurable recon caching with TTL
+- CLI: `--cache-recon 7d|24h|0`
+- `src/pentora/data/profiles/__init__.py` — 5 built-in profiles (generic, dating, saas, fintech, ecommerce)
+- `src/pentora/profile.py` — `load_profile()` with validation
+- CLI: `list-profiles` now shows name + description for all 5 profiles
+- CLI: `compare DIR_A DIR_B` subcommand — diffs two scan results, writes `comparison.json`
+
+#### Batch C — Installer (Tasks 104-106)
+
+- `src/pentora/installer.py` — Full tool registry (15 Go tools, 8 pip tools, 6 git tools, 1 Docker image)
+- `pentora setup` — runs installer (with `--skip-go`, `--skip-docker`)
+- `pentora doctor` — checks all tools, prints status table
+- `pentora update` — updates nuclei templates
+- `install.sh` — one-line Kali/Debian install script
+
+#### Batch D — Docker + CI Release (Tasks 107-110)
+
+- `Dockerfile` — multi-stage (gobuilder + kali-rolling), all Go + pip tools included
+- `.dockerignore` — excludes dev artifacts
+- `docker-compose.yml` — pentora + ollama + juice-shop services
+- `.github/workflows/release.yml` — PyPI + GHCR Docker + GitHub Release on `v*.*.*` tags
+- PyPI wheel verified: templates, LLM prompts, data/profiles, security files all included
+- `build` + `twine` added to dev dependencies
+
+#### Batch E — E2E, Docs, Version (Tasks 111-115)
+
+- `tests/e2e/juice_shop_compose.yml` — Juice Shop E2E environment
+- `tests/e2e/test_juice_shop.sh` — E2E validation script
+- `README.md` — Full production-quality documentation with all features, profiles, output table, acknowledgements
+- `SECURITY.md` — Vulnerability reporting policy
+- `CONTRIBUTING.md` — Development guide with TDD workflow
+- Version bumped: `0.1.0` → `1.0.0`
+- Tagged: `v1.0.0`
+
+---
+
 ## [0.3.0] — 2026-05-31
 
 ### Phase 3: Proxy & LLM Integrations

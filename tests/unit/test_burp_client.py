@@ -9,7 +9,6 @@ from httpx import Response
 
 from pentora.proxy.burp import BurpClient
 
-
 BASE = "http://127.0.0.1:1337"
 
 

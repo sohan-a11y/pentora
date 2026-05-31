@@ -14,7 +14,6 @@ from pentora.proxy.extension_installer import (
     print_extension_instructions,
 )
 
-
 PROXY_URL = "http://127.0.0.1:8080"
 
 

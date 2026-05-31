@@ -5,7 +5,6 @@ import asyncio
 import json
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from pentora.cli import main

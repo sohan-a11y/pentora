@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from typing import Any
 
 GO_TOOLS: dict[str, str] = {
     "subfinder": "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
@@ -57,31 +56,35 @@ def _run_cmd(cmd: list[str]) -> bool:
         return False
 
 
+def _info(msg: str) -> None:
+    print(msg)  # noqa: T201
+
+
 def run_installer(skip_go: bool = False, skip_docker: bool = False) -> None:
     """Install all required tools."""
     if not skip_go:
         for tool, pkg in GO_TOOLS.items():
             if shutil.which(tool):
-                print(f"  [skip] {tool} already installed")
+                _info(f"  [skip] {tool} already installed")
                 continue
-            print(f"  [go install] {tool}...")
+            _info(f"  [go install] {tool}...")
             ok = _run_cmd(["go", "install", pkg])  # noqa: S603
-            print(f"  {'[ok]' if ok else '[fail]'} {tool}")
+            _info(f"  {'[ok]' if ok else '[fail]'} {tool}")
 
     for tool in PIP_TOOLS:
         tool_name = tool.lower()
         if shutil.which(tool_name):
-            print(f"  [skip] {tool} already installed")
+            _info(f"  [skip] {tool} already installed")
             continue
-        print(f"  [pip install] {tool}...")
+        _info(f"  [pip install] {tool}...")
         ok = _run_cmd(["pip", "install", tool])  # noqa: S603
-        print(f"  {'[ok]' if ok else '[fail]'} {tool}")
+        _info(f"  {'[ok]' if ok else '[fail]'} {tool}")
 
     if not skip_docker:
         for image in DOCKER_IMAGES:
-            print(f"  [docker pull] {image}...")
+            _info(f"  [docker pull] {image}...")
             ok = _run_cmd(["docker", "pull", image])  # noqa: S603
-            print(f"  {'[ok]' if ok else '[fail]'} {image}")
+            _info(f"  {'[ok]' if ok else '[fail]'} {image}")
 
 
 def run_doctor() -> int:
@@ -91,8 +94,8 @@ def run_doctor() -> int:
     for tool in all_tools:
         found = shutil.which(tool)
         status = "ok" if found else "MISSING"
-        print(f"  {tool:<30} {status}")
+        _info(f"  {tool:<30} {status}")
         if not found:
             missing += 1
-    print(f"\n{missing} tool(s) missing.")
+    _info(f"\n{missing} tool(s) missing.")
     return missing

@@ -23,7 +23,7 @@ def _resolve_ip(hostname: str) -> str:
     try:
         return socket.gethostbyname(hostname)
     except OSError:
-        return "0.0.0.0"
+        return "0.0.0.0"  # noqa: S104
 
 
 class BurpXmlReporter(Reporter):

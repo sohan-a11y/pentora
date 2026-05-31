@@ -3,14 +3,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
 
 from pentora.wrappers.apktool import ApkDecompileResult, ApktoolWrapper
 from pentora.wrappers.jadx import JadxDecompileResult, JadxWrapper
 from pentora.wrappers.mobsf import MobsfIssue, MobsfWrapper
-
 
 # --- apktool ---
 

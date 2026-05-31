@@ -1,8 +1,6 @@
 """Tests for csp_evaluator — each weakness class."""
 from __future__ import annotations
 
-import pytest
-
 from pentora.security.csp_evaluator import CspIssue, evaluate_csp
 
 

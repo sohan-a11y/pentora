@@ -91,8 +91,8 @@ def main(ctx: click.Context) -> None:
     default=None,
     help="Webhook for notifications: 'discord:URL' | 'slack:URL' | 'telegram:TOKEN:CHATID'",
 )
-@click.option("--resume", is_flag=True, help="Resume from state.json in output dir (skip completed phases)")
-@click.option("--cache-recon", default=None, help="Cache recon results for duration, e.g. '7d', '24h', '0' to disable")
+@click.option("--resume", is_flag=True, help="Resume from state.json in output dir (skip completed phases)")  # noqa: E501
+@click.option("--cache-recon", default=None, help="Cache recon results for duration, e.g. '7d', '24h', '0' to disable")  # noqa: E501
 def scan(  # noqa: PLR0913
     url: str,
     output: str,
@@ -185,8 +185,8 @@ def scan(  # noqa: PLR0913
                 completed = set(state.get("completed_phases", []))
                 requested = [p for p in requested if p not in completed]
                 click.echo(f"[resume] Skipping completed phases: {completed}")
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:  # noqa: BLE001, S110
+                pass  # invalid state.json — proceed with all phases
 
     modules: list[PhaseModule] = [PHASE_MAP[p]() for p in requested if p in PHASE_MAP]
 
@@ -294,11 +294,11 @@ def doctor() -> None:
 @main.command()
 def update() -> None:
     """Update nuclei templates, wordlists, fingerprints."""
-    import subprocess
     from pentora.installer import _run_cmd
     click.echo("Updating nuclei templates...")
     ok = _run_cmd(["nuclei", "-update-templates"])  # noqa: S603
-    click.echo("[ok] nuclei templates updated" if ok else "[warn] nuclei template update failed")
+    msg = "[ok] nuclei templates updated" if ok else "[warn] nuclei template update failed"
+    click.echo(msg)
 
 
 @main.command()
@@ -338,6 +338,7 @@ def compare(dir_a: str, dir_b: str) -> None:
     """Diff two scan result directories — show NEW, RESOLVED, and PERSISTING findings."""
     import asyncio
     import json as _json
+
     from pentora.store import FindingsStore
 
     async def _run() -> None:
@@ -371,8 +372,12 @@ def compare(dir_a: str, dir_b: str) -> None:
             "dir_a": dir_a,
             "dir_b": dir_b,
             "new": [{"id": f.id, "title": f.title, "severity": f.severity.value} for f in new],
-            "resolved": [{"id": f.id, "title": f.title, "severity": f.severity.value} for f in resolved],
-            "persists": [{"id": f.id, "title": f.title, "severity": f.severity.value} for f in persists],
+            "resolved": [  # noqa: E501
+                {"id": f.id, "title": f.title, "severity": f.severity.value} for f in resolved
+            ],
+            "persists": [
+                {"id": f.id, "title": f.title, "severity": f.severity.value} for f in persists
+            ],
         }
         Path("comparison.json").write_text(_json.dumps(comparison, indent=2))
         click.echo("\ncomparison.json written.")

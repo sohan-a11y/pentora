@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,10 +52,7 @@ def _parse_request(raw: str, endpoint: str, method: str) -> dict[str, Any]:
                 host = value.strip()
 
     # Build URL
-    if host and req_path.startswith("/"):
-        url = f"https://{host}{req_path}"
-    else:
-        url = endpoint
+    url = f"https://{host}{req_path}" if host and req_path.startswith("/") else endpoint
 
     result: dict[str, Any] = {
         "method": req_method,

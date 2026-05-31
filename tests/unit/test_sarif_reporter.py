@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pentora.finding import CVSS, Finding, Severity
+from pentora.finding import CVSS, Finding
 from pentora.reporters.sarif import SarifReporter
 
 
