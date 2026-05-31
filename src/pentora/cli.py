@@ -78,6 +78,14 @@ def main(ctx: click.Context) -> None:
 @click.option("--llm-model", default=None, help="LLM model name")
 @click.option("--no-sanitize-llm", is_flag=True, help="Disable PII stripping in LLM prompts")
 @click.option("--apk", default=None, type=click.Path(), help="Path to Android APK for mobile analysis")  # noqa: E501
+@click.option(
+    "--reporter",
+    default="all",
+    help=(
+        "Comma-separated reporters (json,html,md,sarif,csv,defectdojo,faraday,"
+        "burp_xml,zap_xml,har,finding_folder) or 'all'"
+    ),
+)
 def scan(  # noqa: PLR0913
     url: str,
     output: str,
@@ -94,6 +102,7 @@ def scan(  # noqa: PLR0913
     llm_model: str | None = None,
     no_sanitize_llm: bool = False,
     apk: str | None = None,
+    reporter: str = "all",
 ) -> None:
     """Run a full pentest scan against URL."""
     import asyncio
@@ -103,11 +112,8 @@ def scan(  # noqa: PLR0913
     from pentora.context import ScanContext
     from pentora.orchestrator import Orchestrator
     from pentora.proxy.base import ProxyClient
+    from pentora.reporters import ALL_REPORTERS, REPORTER_MAP
     from pentora.reporters.base import Reporter
-    from pentora.reporters.finding_folder import FindingFolderReporter
-    from pentora.reporters.html import HtmlReporter
-    from pentora.reporters.json_reporter import JsonReporter
-    from pentora.reporters.markdown import MarkdownReporter
     from pentora.scope import Scope
 
     if ai_mode and llm_provider is None:
@@ -154,7 +160,7 @@ def scan(  # noqa: PLR0913
         click.echo(f"Profile: {profile}")
         click.echo(f"Proxy: {proxy}")
         click.echo(f"AI mode: {ai_mode}")
-        click.echo("Reporters: json, markdown, html, finding_folder")
+        click.echo(f"Reporters: {reporter}")
         return
 
     modules: list[PhaseModule] = [PHASE_MAP[p]() for p in requested if p in PHASE_MAP]
@@ -183,12 +189,11 @@ def scan(  # noqa: PLR0913
     resolved = _resolve_proxy_client(proxy)
     proxy_client: ProxyClient | None = resolved  # type: ignore[assignment]
 
-    reporters: list[Reporter] = [
-        JsonReporter(),
-        MarkdownReporter(),
-        HtmlReporter(),
-        FindingFolderReporter(),
-    ]
+    if reporter == "all":
+        reporters: list[Reporter] = ALL_REPORTERS
+    else:
+        requested_reporters = [r.strip() for r in reporter.split(",") if r.strip()]
+        reporters = [REPORTER_MAP[r] for r in requested_reporters if r in REPORTER_MAP]
     orc = Orchestrator(modules=modules, reporters=reporters, proxy_client=proxy_client)
     asyncio.run(orc.run(ctx))
     click.echo(f"Scan complete. Reports written to {output}/")
