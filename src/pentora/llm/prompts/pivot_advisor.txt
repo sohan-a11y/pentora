@@ -1,0 +1,1 @@
+Given this unexpected security finding, suggest the 3 most impactful next attack steps as a JSON array: [{"step": str, "rationale": str, "risk_level": str}]

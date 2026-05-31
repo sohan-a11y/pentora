@@ -1,0 +1,2 @@
+Analyze this login page HTML/JS. Identify the authentication mechanism and return a JSON object: {"auth_type": str, "token_location": str, "two_fa_mechanism": str, "login_endpoint": str, "notes": str}
+Valid auth_type values: form, OAuth, magic-link, JWT, OTP
