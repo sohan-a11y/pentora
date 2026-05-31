@@ -9,6 +9,7 @@ from pentora.modules.auth import AuthModule
 from pentora.modules.authz import AuthzModule
 from pentora.modules.base import PhaseModule
 from pentora.modules.discovery import DiscoveryModule
+from pentora.modules.disclosure import DisclosureModule
 from pentora.modules.injection import InjectionModule
 from pentora.modules.logic import LogicModule
 from pentora.modules.recon import ReconModule
@@ -26,6 +27,7 @@ PHASE_MAP: dict[str, type[PhaseModule]] = {
     "upload": UploadModule,
     "ssrf": SsrfModule,
     "logic": LogicModule,
+    "disclosure": DisclosureModule,
 }
 
 
