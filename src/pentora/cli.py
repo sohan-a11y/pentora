@@ -91,6 +91,7 @@ def main(ctx: click.Context) -> None:
     default=None,
     help="Webhook for notifications: 'discord:URL' | 'slack:URL' | 'telegram:TOKEN:CHATID'",
 )
+@click.option("--resume", is_flag=True, help="Resume from state.json in output dir (skip completed phases)")
 def scan(  # noqa: PLR0913
     url: str,
     output: str,
@@ -109,6 +110,7 @@ def scan(  # noqa: PLR0913
     apk: str | None = None,
     reporter: str = "all",
     notify: str | None = None,
+    resume: bool = False,
 ) -> None:
     """Run a full pentest scan against URL."""
     import asyncio
@@ -168,6 +170,19 @@ def scan(  # noqa: PLR0913
         click.echo(f"AI mode: {ai_mode}")
         click.echo(f"Reporters: {reporter}")
         return
+
+    # Resume: skip phases already completed
+    if resume:
+        import json as _json
+        state_file = Path(output) / "state.json"
+        if state_file.exists():
+            try:
+                state = _json.loads(state_file.read_text())
+                completed = set(state.get("completed_phases", []))
+                requested = [p for p in requested if p not in completed]
+                click.echo(f"[resume] Skipping completed phases: {completed}")
+            except Exception:  # noqa: BLE001
+                pass
 
     modules: list[PhaseModule] = [PHASE_MAP[p]() for p in requested if p in PHASE_MAP]
 

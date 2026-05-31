@@ -1,6 +1,7 @@
 """Scan orchestrator — runs phase modules, then reporters."""
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Awaitable, Callable
 
@@ -33,6 +34,7 @@ class Orchestrator:
         assert ctx.store is not None
 
         proxy_scan_id: str | None = None
+        completed_phases: list[str] = []
 
         for module in self._modules:
             log.info("phase_start", extra={"module": module.name})
@@ -44,6 +46,14 @@ class Orchestrator:
                 log.error("phase_failed", extra={"module": module.name, "error": str(e)})
             if self._on_phase_end is not None:
                 await self._on_phase_end(module.name, ctx)
+
+            # Track completed phases and persist state for resume support
+            completed_phases.append(module.name)
+            state = {"completed_phases": completed_phases, "target": ctx.target}
+            try:
+                (ctx.output_dir / "state.json").write_text(json.dumps(state))
+            except OSError as e:
+                log.warning("state_write_failed", extra={"error": str(e)})
 
             # After recon phase: add discovered hosts to proxy scope
             if self._proxy_client is not None and module.name.startswith("recon"):
