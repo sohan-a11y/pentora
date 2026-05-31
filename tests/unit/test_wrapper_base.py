@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import pytest
@@ -6,13 +7,25 @@ from pentora.wrappers.base import ToolNotInstalled, ToolWrapper
 
 
 class FakeTool(ToolWrapper):
-    tool_name = "echo"
-    install_check_argv = ["echo", "--version"]  # always succeeds
+    """Uses the Python interpreter to echo args — works cross-platform."""
 
-    def build_argv(self, *args, **kwargs):
-        return ["echo", *args]
+    tool_name = "python-fake"
+    install_check_argv = [sys.executable, "--version"]
 
-    def parse(self, stdout, stderr, returncode):
+    def installed(self) -> bool:
+        # Python is always available; bypass shutil.which on the alias name.
+        return True
+
+    def build_argv(self, *args: str, **kwargs: object) -> list[str]:
+        # Print args joined by space; no echo.exe dependency.
+        return [
+            sys.executable,
+            "-c",
+            "import sys; sys.stdout.write(' '.join(sys.argv[1:]) + '\\n')",
+            *args,
+        ]
+
+    def parse(self, stdout: str, stderr: str, returncode: int) -> list[str]:
         return [stdout.strip()]
 
 
