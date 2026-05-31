@@ -1,0 +1,2 @@
+[VULNERABLE] https://example.com/login?next=https://evil.com [redirect to: https://evil.com]
+[SAFE] https://example.com/profile?back=/home

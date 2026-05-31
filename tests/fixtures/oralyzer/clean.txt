@@ -1,0 +1,2 @@
+[SAFE] https://example.com/home?back=/index
+[SAFE] https://example.com/profile?return=/settings
