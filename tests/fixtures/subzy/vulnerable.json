@@ -1,0 +1,16 @@
+[
+  {
+    "subdomain": "assets.t.example",
+    "cname": "assets.t.example.github.io",
+    "vulnerable": true,
+    "service": "GitHub Pages",
+    "fingerprint": "There isn't a GitHub Pages site here"
+  },
+  {
+    "subdomain": "cdn.t.example",
+    "cname": "cdn.t.example.herokudns.com",
+    "vulnerable": true,
+    "service": "Heroku",
+    "fingerprint": "No such app"
+  }
+]

@@ -1,0 +1,9 @@
+[
+  {
+    "subdomain": "www.t.example",
+    "cname": "",
+    "vulnerable": false,
+    "service": "",
+    "fingerprint": ""
+  }
+]
