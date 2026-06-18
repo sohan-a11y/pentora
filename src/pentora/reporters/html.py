@@ -39,5 +39,5 @@ class HtmlReporter(Reporter):
             },
         }
         out = output_dir / self.output_filename
-        out.write_text(self._env.get_template("report.html").render(ctx))
+        out.write_text(self._env.get_template("report.html").render(ctx), encoding="utf-8")
         return out

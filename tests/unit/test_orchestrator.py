@@ -9,6 +9,7 @@ from pentora.modules.base import PhaseModule
 from pentora.orchestrator import Orchestrator
 from pentora.reporters.json_reporter import JsonReporter
 from pentora.scope import Scope
+from pentora.wrappers.base import ToolNotInstalled
 
 
 class FakeModule(PhaseModule):
@@ -21,6 +22,20 @@ class FakeModule(PhaseModule):
         if ctx.store:
             await ctx.store.add(f)
         return [f]
+
+
+class ToolMissingModule(PhaseModule):
+    name = "toolmissing"
+
+    async def run(self, ctx):
+        raise ToolNotInstalled("subfinder not found on PATH")
+
+
+class CrashingModule(PhaseModule):
+    name = "crashing"
+
+    async def run(self, ctx):
+        raise RuntimeError("boom")
 
 
 @pytest.mark.asyncio
@@ -75,4 +90,43 @@ async def test_orchestrator_no_hooks(tmp_path: Path) -> None:
     )
     orc = Orchestrator(modules=[FakeModule()], reporters=[JsonReporter()])
     await orc.run(ctx)  # must not raise
+    assert (tmp_path / "summary.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_skips_module_with_missing_tool(tmp_path: Path) -> None:
+    """A ToolNotInstalled in one module must not abort the scan (regression)."""
+    ctx = ScanContext(
+        target="https://x.com", output_dir=tmp_path, config=Config(),
+        scope=Scope(include=["x.com"]),
+    )
+    orc = Orchestrator(
+        modules=[ToolMissingModule(), FakeModule()], reporters=[JsonReporter()]
+    )
+    await orc.run(ctx)  # must not raise
+    assert ctx.store is not None
+    findings = await ctx.store.all()
+    # The good module still ran after the tool-missing one was skipped.
+    assert any(f.module == "fake" for f in findings)
+    assert (tmp_path / "summary.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_survives_module_exception(tmp_path: Path) -> None:
+    """A crashing module must be logged and isolated, not crash the run.
+
+    Regression: the error handler used to pass extra={"module": ...} to stdlib
+    logging, which raised KeyError on the reserved LogRecord attribute.
+    """
+    ctx = ScanContext(
+        target="https://x.com", output_dir=tmp_path, config=Config(),
+        scope=Scope(include=["x.com"]),
+    )
+    orc = Orchestrator(
+        modules=[CrashingModule(), FakeModule()], reporters=[JsonReporter()]
+    )
+    await orc.run(ctx)  # must not raise (no LogRecord KeyError)
+    assert ctx.store is not None
+    findings = await ctx.store.all()
+    assert any(f.module == "fake" for f in findings)
     assert (tmp_path / "summary.json").exists()

@@ -64,5 +64,5 @@ class BurpXmlReporter(Reporter):
             '<!DOCTYPE issues [<!ELEMENT issues (issue*)>]>',
             xml_body,
         ])
-        out.write_text(content)
+        out.write_text(content, encoding="utf-8")
         return out

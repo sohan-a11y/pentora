@@ -40,5 +40,5 @@ class FaradayReporter(Reporter):
 
         doc = {"hosts": hosts}
         out = output_dir / self.output_filename
-        out.write_text(json.dumps(doc, indent=2))
+        out.write_text(json.dumps(doc, indent=2), encoding="utf-8")
         return out

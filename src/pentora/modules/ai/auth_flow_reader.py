@@ -55,7 +55,7 @@ class AuthFlowReaderModule(AIModule):
 
         # Write to recon output
         out_path = ctx.output_dir / "recon" / "auth-flow.json"
-        out_path.write_text(json.dumps(auth_data, indent=2))
+        out_path.write_text(json.dumps(auth_data, indent=2), encoding="utf-8")
         log.info("auth_flow_written", extra={"path": str(out_path)})
         return []
 

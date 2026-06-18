@@ -10,6 +10,7 @@ from pentora.finding import Finding
 from pentora.modules.base import PhaseModule
 from pentora.proxy.base import ProxyClient
 from pentora.reporters.base import Reporter
+from pentora.wrappers.base import ToolNotInstalled
 
 log = logging.getLogger(__name__)
 
@@ -37,13 +38,16 @@ class Orchestrator:
         completed_phases: list[str] = []
 
         for module in self._modules:
-            log.info("phase_start", extra={"module": module.name})
+            log.info("phase_start", extra={"phase": module.name})
             if self._on_phase_start is not None:
                 await self._on_phase_start(module.name, ctx)
             try:
                 await module.run(ctx)
+            except ToolNotInstalled as e:
+                # A missing external tool degrades gracefully — skip, don't abort the scan.
+                log.warning("phase_skipped_missing_tool", extra={"phase": module.name, "error": str(e)})  # noqa: E501
             except Exception as e:  # noqa: BLE001 - per-module isolation, log and continue
-                log.error("phase_failed", extra={"module": module.name, "error": str(e)})
+                log.error("phase_failed", extra={"phase": module.name, "error": str(e)})
             if self._on_phase_end is not None:
                 await self._on_phase_end(module.name, ctx)
 
@@ -51,7 +55,7 @@ class Orchestrator:
             completed_phases.append(module.name)
             state = {"completed_phases": completed_phases, "target": ctx.target}
             try:
-                (ctx.output_dir / "state.json").write_text(json.dumps(state))
+                (ctx.output_dir / "state.json").write_text(json.dumps(state), encoding="utf-8")
             except OSError as e:
                 log.warning("state_write_failed", extra={"error": str(e)})
 

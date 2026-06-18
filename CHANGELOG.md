@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.0.1] — 2026-06-19
+
+### Fixed — real-world hardening pass
+
+First end-to-end runs on a bare machine surfaced bugs that the mocked unit tests
+missed. 456 tests, 89.6% coverage. ruff + mypy --strict clean.
+
+- **Orchestrator no longer crashes on phase failure.** The error handler passed
+  `extra={"module": ...}` to stdlib logging, whose reserved `LogRecord.module`
+  attribute raised `KeyError` — turning any single phase failure into a fatal
+  secondary crash. Renamed the log key to `phase`.
+- **Graceful degradation when external tools are absent.** A missing tool now
+  skips its phase (logged) instead of aborting the whole scan. Recon falls back
+  to a native Python HTTP probe when `subfinder`/`httpx` are missing — or when an
+  unrelated `httpx` binary (e.g. Python's `httpx[cli]`) shadows ProjectDiscovery's
+  on PATH and yields nothing.
+- **Default scan now runs all 16 phases** (`--phases` defaulted to `recon` only).
+- **No more false positives on non-existent endpoints.** Auth rate-limit,
+  enumeration, and password-reset checks now skip when the target path returns
+  404/405 instead of reporting "missing rate limiting" on pages that don't exist.
+- **UTF-8 everywhere.** All report writers now write `encoding="utf-8"`; on
+  Windows the default (cp1252) corrupted non-ASCII bytes and produced malformed
+  Burp/ZAP XML. Console output is ASCII-safe.
+- **`report` and `import-results` are implemented** (were stubs). New
+  `pentora.importers` parses Burp/ZAP XML exports (via `defusedxml`) back into the
+  store. `report` regenerates all 11 formats from an existing `findings.db`.
+- **Clean CLI UX.** Detailed logs go to `logs/pentora.log`; the console shows
+  per-phase progress and a severity summary. Top-level errors print a clean
+  message instead of a traceback. Fixed a wrong `FindingsStore` path in `--notify`.
+
 ## [1.0.0] — 2026-05-31
 
 ### Phase 4: Final Release

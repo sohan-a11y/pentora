@@ -49,13 +49,13 @@ PHASE_MAP: dict[str, type[PhaseModule]] = {
 @click.version_option(version=__version__, prog_name="pentora")
 @click.pass_context
 def main(ctx: click.Context) -> None:
-    """Pentora — autonomous web application pentest orchestrator."""
+    """Pentora - autonomous web application pentest orchestrator."""
 
 
 @main.command()
 @click.argument("url")
 @click.option("--output", "-o", type=click.Path(), default="./pentora-out", help="Output directory")
-@click.option("--phases", default="recon", help="Comma-separated phase names (or 'all')")
+@click.option("--phases", default="all", help="Comma-separated phase names (or 'all')")
 @click.option("--scope-include", default="", help="Comma-separated in-scope hosts/wildcards")
 @click.option("--scope-exclude", default="", help="Comma-separated excluded hosts")
 @click.option("--token-a", default=None)
@@ -186,7 +186,7 @@ def scan(  # noqa: PLR0913
                 requested = [p for p in requested if p not in completed]
                 click.echo(f"[resume] Skipping completed phases: {completed}")
             except Exception:  # noqa: BLE001, S110
-                pass  # invalid state.json — proceed with all phases
+                pass  # invalid state.json - proceed with all phases
 
     modules: list[PhaseModule] = [PHASE_MAP[p]() for p in requested if p in PHASE_MAP]
 
@@ -219,14 +219,63 @@ def scan(  # noqa: PLR0913
     else:
         requested_reporters = [r.strip() for r in reporter.split(",") if r.strip()]
         reporters = [REPORTER_MAP[r] for r in requested_reporters if r in REPORTER_MAP]
-    orc = Orchestrator(modules=modules, reporters=reporters, proxy_client=proxy_client)
-    asyncio.run(orc.run(ctx))
-    click.echo(f"Scan complete. Reports written to {output}/")
+
+    if not modules:
+        raise click.UsageError(
+            f"No valid phases selected. Available: {', '.join(PHASE_MAP)} (or 'all')."
+        )
+
+    # Route detailed logs to a file; keep the console clean.
+    from pentora.logging_setup import setup_logging
+    setup_logging(Path(output) / "logs" / "pentora.log")
+
+    # Clean per-phase progress on the console.
+    total_phases = len(modules)
+    progress = {"idx": 0, "prev": 0}
+
+    async def _on_start(name: str, c: ScanContext) -> None:
+        progress["idx"] += 1
+        click.echo(f"  [{progress['idx']:>2}/{total_phases}] {name:<12} ", nl=False)
+
+    async def _on_end(name: str, c: ScanContext) -> None:
+        total = await c.store.count() if c.store else 0
+        delta = total - progress["prev"]
+        progress["prev"] = total
+        click.echo(f"{delta:>3} new finding(s)")
+
+    click.echo(f"\nPentora scan -> {url}")
+    click.echo(
+        f"Phases: {total_phases} | Profile: {profile} | Proxy: {proxy} | Output: {output}\n"
+    )
+
+    orc = Orchestrator(
+        modules=modules,
+        reporters=reporters,
+        proxy_client=proxy_client,
+        on_phase_start=_on_start,
+        on_phase_end=_on_end,
+    )
+    try:
+        asyncio.run(orc.run(ctx))
+    except KeyboardInterrupt:
+        click.echo("\n[abort] Interrupted by user.")
+        raise SystemExit(130) from None
+    except Exception as exc:  # noqa: BLE001 - top-level guard for clean CLI errors
+        click.echo(f"\n[error] Scan failed: {exc}")
+        click.echo(f"        See {output}/logs/pentora.log for details.")
+        raise SystemExit(1) from exc
+
+    total, by_sev = asyncio.run(_summarize(Path(output)))
+    click.echo(f"\n[OK] Scan complete - {total} finding(s). Reports in {output}/")
+    if by_sev:
+        order = ["critical", "high", "medium", "low", "info"]
+        parts = [f"{s}: {by_sev[s]}" for s in order if s in by_sev]
+        click.echo("     " + " | ".join(parts))
 
     if notify:
         from pentora.notify import notify_scan_complete
         from pentora.store import FindingsStore
-        store = FindingsStore(Path(output))
+        store = FindingsStore(Path(output) / "findings.db")
         all_findings = asyncio.run(store.all())
         n_crit = sum(1 for f in all_findings if f.severity.value == "critical")
         n_high = sum(1 for f in all_findings if f.severity.value == "high")
@@ -234,6 +283,17 @@ def scan(  # noqa: PLR0913
             asyncio.run(notify_scan_complete(notify, url, len(all_findings), n_crit, n_high))
         except Exception as exc:  # noqa: BLE001
             click.echo(f"[warn] Notification failed: {exc}")
+
+
+async def _summarize(output_dir: Path) -> tuple[int, dict[str, int]]:
+    """Count findings by severity for the final CLI summary line."""
+    from pentora.store import FindingsStore
+    store = FindingsStore(output_dir / "findings.db")
+    findings = await store.all()
+    by_sev: dict[str, int] = {}
+    for f in findings:
+        by_sev[f.severity.value] = by_sev.get(f.severity.value, 0) + 1
+    return len(findings), by_sev
 
 
 def _resolve_proxy_client(proxy: str) -> object:
@@ -249,14 +309,14 @@ def _resolve_proxy_client(proxy: str) -> object:
     if proxy == "burp":
         burp = BurpClient()
         if not asyncio.run(burp.is_alive()):
-            click.echo("[warn] Burp REST API not reachable at 1337 — scanning without proxy")
+            click.echo("[warn] Burp REST API not reachable at 1337 - scanning without proxy")
             return None
         return burp
 
     if proxy == "zap":
         zap = ZapClient()
         if not asyncio.run(zap.is_alive()):
-            click.echo("[warn] ZAP not reachable at 8090 — scanning without proxy")
+            click.echo("[warn] ZAP not reachable at 8090 - scanning without proxy")
             return None
         return zap
 
@@ -267,7 +327,7 @@ def _resolve_proxy_client(proxy: str) -> object:
     zap_auto = ZapClient()
     if asyncio.run(zap_auto.is_alive()):
         return zap_auto
-    click.echo("[info] No proxy detected (auto) — scanning without proxy")
+    click.echo("[info] No proxy detected (auto) - scanning without proxy")
     return None
 
 
@@ -303,17 +363,79 @@ def update() -> None:
 
 @main.command()
 @click.argument("findings_db", type=click.Path(exists=True))
-def report(findings_db: str) -> None:
-    """Regenerate reports from an existing findings DB."""
-    click.echo(f"[stub] report {findings_db}")
+@click.option("--output", "-o", type=click.Path(), default=None, help="Output dir (default: next to the DB)")  # noqa: E501
+def report(findings_db: str, output: str | None = None) -> None:
+    """Regenerate all reports from an existing findings DB (or scan output dir)."""
+    import asyncio
+    import json as _json
+
+    from pentora.reporters import ALL_REPORTERS
+    from pentora.store import FindingsStore
+
+    db_path = Path(findings_db)
+    if db_path.is_dir():
+        db_path = db_path / "findings.db"
+    if not db_path.exists():
+        raise click.UsageError(f"No findings.db found at {findings_db}")
+    out_dir = Path(output) if output else db_path.parent
+
+    async def _run() -> None:
+        store = FindingsStore(db_path)
+        findings = await store.all()
+        target = "(unknown)"
+        state_file = db_path.parent / "state.json"
+        if state_file.exists():
+            import contextlib
+            with contextlib.suppress(ValueError, OSError):
+                target = _json.loads(
+                    state_file.read_text(encoding="utf-8")
+                ).get("target", target)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        written = 0
+        for rep in ALL_REPORTERS:
+            try:
+                await rep.write(out_dir, findings, target)
+                written += 1
+            except Exception as exc:  # noqa: BLE001
+                click.echo(f"[warn] reporter {rep.name} failed: {exc}")
+        click.echo(
+            f"Regenerated {written} report(s) from {len(findings)} finding(s) -> {out_dir}/"
+        )
+
+    asyncio.run(_run())
 
 
 @main.command("import-results")
 @click.argument("source", type=click.Choice(["burp", "zap"]))
 @click.argument("path", type=click.Path(exists=True))
-def import_results(source: str, path: str) -> None:
-    """Import an external scanner's results into Pentora's store."""
-    click.echo(f"[stub] import {source} {path}")
+@click.option("--output", "-o", type=click.Path(), default="./pentora-out", help="Output directory")
+def import_results(source: str, path: str, output: str = "./pentora-out") -> None:
+    """Import an external scanner's results (Burp/ZAP XML) into Pentora's store."""
+    import asyncio
+
+    from pentora.importers import import_results as _import
+    from pentora.store import FindingsStore
+
+    try:
+        findings = _import(source, Path(path))
+    except Exception as exc:  # noqa: BLE001
+        raise click.UsageError(f"Failed to parse {source} export: {exc}") from exc
+
+    async def _run() -> int:
+        out = Path(output)
+        out.mkdir(parents=True, exist_ok=True)
+        store = FindingsStore(out / "findings.db")
+        await store.init()
+        for f in findings:
+            await store.add(f)
+        return await store.count()
+
+    total = asyncio.run(_run())
+    click.echo(f"Imported {len(findings)} finding(s) from {source} -> {output}/findings.db")
+    click.echo(
+        f"Store now holds {total} finding(s). "
+        f"Run 'pentora report {output}' to build reports."
+    )
 
 
 @main.command("list-profiles")
@@ -335,7 +457,7 @@ def list_modules() -> None:
 @click.argument("dir_a", type=click.Path(exists=True))
 @click.argument("dir_b", type=click.Path(exists=True))
 def compare(dir_a: str, dir_b: str) -> None:
-    """Diff two scan result directories — show NEW, RESOLVED, and PERSISTING findings."""
+    """Diff two scan result directories - show NEW, RESOLVED, and PERSISTING findings."""
     import asyncio
     import json as _json
 
@@ -358,15 +480,15 @@ def compare(dir_a: str, dir_b: str) -> None:
 
         click.echo(f"\n=== NEW ({len(new)}) ===")
         for f in new:
-            click.echo(f"  [{f.severity.value.upper()}] {f.title} — {f.endpoint}")
+            click.echo(f"  [{f.severity.value.upper()}] {f.title} - {f.endpoint}")
 
         click.echo(f"\n=== RESOLVED ({len(resolved)}) ===")
         for f in resolved:
-            click.echo(f"  [{f.severity.value.upper()}] {f.title} — {f.endpoint}")
+            click.echo(f"  [{f.severity.value.upper()}] {f.title} - {f.endpoint}")
 
         click.echo(f"\n=== PERSISTS ({len(persists)}) ===")
         for f in persists:
-            click.echo(f"  [{f.severity.value.upper()}] {f.title} — {f.endpoint}")
+            click.echo(f"  [{f.severity.value.upper()}] {f.title} - {f.endpoint}")
 
         comparison = {
             "dir_a": dir_a,
@@ -379,7 +501,7 @@ def compare(dir_a: str, dir_b: str) -> None:
                 {"id": f.id, "title": f.title, "severity": f.severity.value} for f in persists
             ],
         }
-        Path("comparison.json").write_text(_json.dumps(comparison, indent=2))
+        Path("comparison.json").write_text(_json.dumps(comparison, indent=2), encoding="utf-8")
         click.echo("\ncomparison.json written.")
 
     asyncio.run(_run())

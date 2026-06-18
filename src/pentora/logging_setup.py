@@ -9,12 +9,22 @@ from pathlib import Path
 import structlog
 
 
-def setup_logging(log_file: Path, level: int = logging.INFO) -> None:
+def setup_logging(log_file: Path, level: int = logging.INFO, console: bool = False) -> None:
+    """Configure logging. Detailed logs go to ``log_file``; the console stays clean.
+
+    Set ``console=True`` to also stream logs to stderr (useful for debugging). When
+    a file handler is attached, Python's last-resort stderr handler is suppressed,
+    so raw event names no longer leak into normal CLI output.
+    """
     log_file.parent.mkdir(parents=True, exist_ok=True)
+    handlers: list[logging.Handler] = [logging.FileHandler(log_file, encoding="utf-8")]
+    if console:
+        handlers.append(logging.StreamHandler())
     logging.basicConfig(
         level=level,
-        format="%(message)s",
-        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
+        format="%(asctime)s %(levelname)-7s %(name)s | %(message)s",
+        handlers=handlers,
+        force=True,
     )
     structlog.configure(
         processors=[
@@ -46,4 +56,4 @@ def log_tool_invocation(
         "duration_ms": duration_ms,
     }
     fp = log_dir / f"{ts}-{tool}.json"
-    fp.write_text(json.dumps(payload, indent=2))
+    fp.write_text(json.dumps(payload, indent=2), encoding="utf-8")

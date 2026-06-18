@@ -53,7 +53,7 @@ class ReconCache:
         cache_dir = self._cache_dir / self._slug(target)
         cache_dir.mkdir(parents=True, exist_ok=True)
         payload = {"timestamp": datetime.now(UTC).isoformat(), **data}
-        (cache_dir / "recon.json").write_text(json.dumps(payload))
+        (cache_dir / "recon.json").write_text(json.dumps(payload), encoding="utf-8")
 
 
 def default_cache(max_age: timedelta) -> ReconCache:

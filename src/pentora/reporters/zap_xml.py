@@ -75,5 +75,5 @@ class ZapXmlReporter(Reporter):
         ET.indent(tree, space="  ")
         xml_body = ET.tostring(report, encoding="unicode")
         content = '<?xml version="1.0"?>\n' + xml_body
-        out.write_text(content)
+        out.write_text(content, encoding="utf-8")
         return out

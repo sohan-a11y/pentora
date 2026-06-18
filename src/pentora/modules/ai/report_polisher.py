@@ -50,7 +50,7 @@ class ReportPolisherModule(AIModule):
         # Write executive summary to output dir
         summary_path: Path = ctx.output_dir / "executive-summary.md"
         summary_path.write_text(
-            f"# Executive Summary\n\n{response.content}\n"
+            f"# Executive Summary\n\n{response.content}\n", encoding="utf-8"
         )
         log.info("executive_summary_written", extra={"path": str(summary_path)})
         return []

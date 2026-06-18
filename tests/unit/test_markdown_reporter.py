@@ -17,7 +17,7 @@ async def test_markdown_reporter_outputs_grouped_by_severity(tmp_path: Path) -> 
                 cvss=CVSS.from_vector("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")),
     ]
     out = await MarkdownReporter().write(tmp_path, findings, target="https://x.com")
-    text = out.read_text()
+    text = out.read_text(encoding="utf-8")
     assert "# Pentora Report — https://x.com" in text
     assert "## Critical (1)" in text
     assert "## Info (1)" in text

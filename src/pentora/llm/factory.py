@@ -31,7 +31,7 @@ def make_provider(name: str, model: str) -> LLMProvider:
         model = cfg.get("model", model)
 
     _LAST_LLM_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _LAST_LLM_PATH.write_text(yaml.dump({"provider": name, "model": model}))
+    _LAST_LLM_PATH.write_text(yaml.dump({"provider": name, "model": model}), encoding="utf-8")
 
     providers: dict[str, LLMProvider] = {
         "ollama": OllamaProvider(),

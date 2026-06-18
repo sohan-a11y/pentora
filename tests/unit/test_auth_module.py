@@ -58,6 +58,28 @@ async def test_rate_limit_check_silent_when_429_returned(tmp_path: Path) -> None
 
 @pytest.mark.asyncio
 @respx.mock
+async def test_rate_limit_check_skips_nonexistent_login(tmp_path: Path) -> None:
+    """No false positive when /login does not exist (404) — regression."""
+    respx.post("https://t.example/login").mock(return_value=httpx.Response(404))
+    module = AuthModule()
+    async with httpx.AsyncClient() as client:
+        findings = await module.check_rate_limit(client, "https://t.example", _auth_cfg())
+    assert findings == []
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_rate_limit_check_skips_method_not_allowed(tmp_path: Path) -> None:
+    """No false positive when /login rejects POST (405)."""
+    respx.post("https://t.example/login").mock(return_value=httpx.Response(405))
+    module = AuthModule()
+    async with httpx.AsyncClient() as client:
+        findings = await module.check_rate_limit(client, "https://t.example", _auth_cfg())
+    assert findings == []
+
+
+@pytest.mark.asyncio
+@respx.mock
 async def test_enumeration_check_flags_timing_delta(tmp_path: Path) -> None:
     def responder(request: httpx.Request) -> httpx.Response:
         body = request.content.decode()

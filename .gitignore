@@ -35,3 +35,6 @@ out/
 .env.local
 *.key
 *.pem
+
+# compare command output
+comparison.json

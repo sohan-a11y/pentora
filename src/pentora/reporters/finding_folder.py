@@ -38,10 +38,12 @@ class FindingFolderReporter(Reporter):
             folder = root / f"{ts}_{_slug(f.module)}_{_slug(f.title)}"
             folder.mkdir(exist_ok=True)
             (folder / "finding.md").write_text(
-                self._env.get_template("finding.md.j2").render(f=f)
+                self._env.get_template("finding.md.j2").render(f=f), encoding="utf-8"
             )
-            (folder / "poc.sh").write_text(self._env.get_template("poc.sh.j2").render(f=f))
+            (folder / "poc.sh").write_text(
+                self._env.get_template("poc.sh.j2").render(f=f), encoding="utf-8"
+            )
             (folder / "poc.sh").chmod(0o755)
-            (folder / "request.http").write_text(f.request_raw or "")
-            (folder / "response.http").write_text(f.response_raw or "")
+            (folder / "request.http").write_text(f.request_raw or "", encoding="utf-8")
+            (folder / "response.http").write_text(f.response_raw or "", encoding="utf-8")
         return root

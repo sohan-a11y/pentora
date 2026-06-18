@@ -71,6 +71,12 @@ class FindingsStore:
             )
             await db.commit()
 
+    async def count(self) -> int:
+        async with aiosqlite.connect(self._path) as db:
+            cur = await db.execute("SELECT COUNT(*) FROM findings")
+            row = await cur.fetchone()
+        return int(row[0]) if row else 0
+
     async def all(self) -> list[Finding]:
         async with aiosqlite.connect(self._path) as db:
             db.row_factory = aiosqlite.Row

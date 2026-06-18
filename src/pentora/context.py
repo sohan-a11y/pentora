@@ -45,4 +45,4 @@ class ScanContext:
             lines.append(f"-{exc}")
         for p in self.scope.exclude_paths:
             lines.append(f"!{p}")
-        (self.output_dir / "scope.lock").write_text("\n".join(lines) + "\n")
+        (self.output_dir / "scope.lock").write_text("\n".join(lines) + "\n", encoding="utf-8")

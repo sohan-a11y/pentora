@@ -75,10 +75,13 @@ class AuthModule(PhaseModule):
         attempts = int(cfg["rate_limit_attempts"])
         payload = {cfg["username_field"]: cfg["existing_user"], cfg["password_field"]: "wrong"}
         throttled = 0
-        for _ in range(attempts):
+        for i in range(attempts):
             try:
                 resp = await client.post(url, json=payload)
             except httpx.HTTPError:
+                return []
+            # If the endpoint doesn't exist or rejects POST, it's not a login — skip.
+            if i == 0 and resp.status_code in (404, 405):
                 return []
             if resp.status_code == 429 or resp.status_code == 503 or "retry-after" in resp.headers:
                 throttled += 1
@@ -107,6 +110,16 @@ class AuthModule(PhaseModule):
         url = f"{base}{cfg['login_path']}"
         samples = int(cfg["enumeration_samples"])
         threshold = float(cfg["enumeration_threshold_ms"])
+
+        # Skip if the login endpoint doesn't exist (timing comparison would be noise).
+        try:
+            probe = await client.post(
+                url, json={cfg["username_field"]: cfg["existing_user"], cfg["password_field"]: "x"}
+            )
+        except httpx.HTTPError:
+            return []
+        if probe.status_code in (404, 405):
+            return []
 
         async def send(user: str) -> None:
             await client.post(
@@ -211,6 +224,9 @@ class AuthModule(PhaseModule):
         payload = {cfg["username_field"]: cfg["existing_user"]}
         try:
             r1 = await client.post(url, json=payload)
+            # If the endpoint doesn't exist or rejects POST, there's nothing to test.
+            if r1.status_code in (404, 405):
+                return []
             r2 = await client.post(url, json=payload)
         except httpx.HTTPError:
             return []

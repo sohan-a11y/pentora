@@ -52,5 +52,5 @@ class MarkdownReporter(Reporter):
                 lines.append("")
 
         out = output_dir / self.output_filename
-        out.write_text("\n".join(lines))
+        out.write_text("\n".join(lines), encoding="utf-8")
         return out

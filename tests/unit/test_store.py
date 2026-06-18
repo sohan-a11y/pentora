@@ -73,3 +73,19 @@ async def test_store_filter_by_severity(tmp_path: Path) -> None:
     criticals_and_highs = await store.by_min_severity("HIGH")
     assert len(criticals_and_highs) == 1
     assert criticals_and_highs[0].title == "SQLi"
+
+
+@pytest.mark.asyncio
+async def test_store_count(tmp_path: Path) -> None:
+    db = tmp_path / "findings.db"
+    store = FindingsStore(db)
+    await store.init()
+    assert await store.count() == 0
+    await store.add(
+        Finding(
+            module="headers", title="Missing HSTS", endpoint="https://x.com/",
+            method="GET", evidence="absent",
+            cvss=CVSS.from_vector("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N"),
+        )
+    )
+    assert await store.count() == 1
