@@ -84,6 +84,7 @@ class PrimitiveResult:
     partial: bool = False          # cancelled/timed-out but returned results so far
     requests_made: int = 0
     duration_s: float = 0.0
+    data: dict[str, Any] = field(default_factory=dict)  # transient handoff, NOT persisted
 
 
 class Primitive(ABC):

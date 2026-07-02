@@ -48,6 +48,7 @@ dev = [
 ]
 browser = ["playwright>=1.47"]
 ai = []  # LLM providers use httpx only — no extra deps needed
+engine = ["py-trees>=2.2"]  # reactive-engine playbooks (behavior trees)
 
 [project.scripts]
 pentora = "pentora.cli:main"
@@ -91,6 +92,14 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "py_trees.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pentora.engine.playbook"
+disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-party base)
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
