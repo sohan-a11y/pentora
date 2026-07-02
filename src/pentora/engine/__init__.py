@@ -44,6 +44,7 @@ from pentora.engine.primitive import (
     RunScope,
     ScopeViolation,
 )
+from pentora.engine.replay import HttpReplayPrimitive, ReplayInput
 from pentora.engine.validator import (
     DeterministicValidator,
     IdorValidator,
@@ -70,6 +71,7 @@ __all__ = [
     "Finding",
     "Governor",
     "GovernorDecision",
+    "HttpReplayPrimitive",
     "HttpTransaction",
     "Hypothesis",
     "IdorValidator",
@@ -80,6 +82,7 @@ __all__ = [
     "Pattern",
     "Primitive",
     "PrimitiveResult",
+    "ReplayInput",
     "Rule",
     "RuleEngine",
     "RunContext",

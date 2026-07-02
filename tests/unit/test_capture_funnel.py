@@ -118,7 +118,7 @@ def test_addon_with_real_mitmproxy_flow() -> None:
     assert scs and scs[0].has_jwt and scs[0].jwt == token
 
 
-def test_capture_to_cvss91_finding_full_funnel() -> None:
+def test_capture_to_cvss91_finding_full_funnel(jwt_server) -> None:  # noqa: ANN001
     """THE handoff: a captured weak-JWT request -> facts -> rule -> playbook -> CVSS 9.1."""
     pytest.importorskip("py_trees")
     from pentora.engine import (
@@ -129,7 +129,7 @@ def test_capture_to_cvss91_finding_full_funnel() -> None:
         RuleEngine,
         Task,
     )
-    from pentora.engine.playbook import DemoProtectedResource, JwtPlaybookContext, run_jwt_playbook
+    from pentora.engine.playbook import JwtPlaybookContext, run_jwt_playbook
 
     secret = "secret123"
     wordlist = ["password", "admin", "secret123", "letmein"]
@@ -139,7 +139,6 @@ def test_capture_to_cvss91_finding_full_funnel() -> None:
     eng = RuleEngine(bb)
     gov = Governor()
     val = DeterministicValidator()
-    resource = DemoProtectedResource(secret=secret)
 
     def on_jwt(engine: RuleEngine, b: dict) -> None:  # noqa: ANN001
         engine.assert_fact(Hypothesis(source="jwt_rule", claim="jwt_forge",
@@ -165,8 +164,11 @@ def test_capture_to_cvss91_finding_full_funnel() -> None:
     # 2) rules fire -> 3) playbook -> 4) validated finding
     eng.run_to_fixpoint()
     hyp = bb.query("hypothesis", claim="jwt_forge")[0]
-    run_jwt_playbook(JwtPlaybookContext(bb=bb, governor=gov, validator=val, hypothesis=hyp,
-                                        jwt=captured[0].jwt, wordlist=wordlist, resource=resource))
+    with jwt_server(secret) as base_url:
+        run_jwt_playbook(JwtPlaybookContext(
+            bb=bb, governor=gov, validator=val, hypothesis=hyp,
+            jwt=captured[0].jwt, wordlist=wordlist, target_url=base_url + "/api/orders",
+        ))
 
     findings = bb.query("finding")
     assert len(findings) == 1
