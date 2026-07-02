@@ -108,6 +108,10 @@ follow_imports = "skip"   # mitmproxy's own source uses 3.12 syntax; don't type-
 module = "pentora.engine.playbook"
 disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-party base)
 
+[[tool.mypy.overrides]]
+module = "pentora.engine.playbook_idor"
+disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-party base)
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 addopts = "--strict-markers --cov=pentora --cov-report=term-missing --cov-fail-under=80"

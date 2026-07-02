@@ -69,3 +69,69 @@ def _serve(secret: str) -> Iterator[str]:
 def jwt_server() -> Callable[[str], object]:
     """Return a context manager: ``with jwt_server(secret) as base_url: ...``."""
     return _serve
+
+
+# ---- IDOR / BOLA server: /api/orders/{id}, ownership per token sub ----------
+
+_ORDERS = {"1": ("user_a", "ALPHA-secret-order-one"), "2": ("user_b", "BETA-secret-order-two")}
+
+
+def _token_sub(token: str, secret: str) -> str | None:
+    parts = token.split(".")
+    if len(parts) != 3:
+        return None
+    h, p, sig = parts
+    expected = (
+        base64.urlsafe_b64encode(hmac.new(secret.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest())
+        .rstrip(b"=")
+        .decode()
+    )
+    if not hmac.compare_digest(expected, sig):
+        return None
+    try:
+        return str(json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4))).get("sub"))
+    except Exception:
+        return None
+
+
+@contextmanager
+def _serve_idor(secret: str, vulnerable: bool = True) -> Iterator[str]:
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            oid = self.path.rstrip("/").rsplit("/", 1)[-1]
+            auth = self.headers.get("Authorization", "")
+            token = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
+            sub = _token_sub(token, secret)
+            if sub is None:
+                code, body = 401, "unauthorized"
+            elif oid not in _ORDERS:
+                code, body = 404, "not found"
+            else:
+                owner, data = _ORDERS[oid]
+                if not vulnerable and owner != sub:
+                    code, body = 403, "forbidden"      # secure: ownership enforced
+                else:
+                    code, body = 200, data             # vulnerable: any order by id
+            payload = body.encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def log_message(self, *args: object) -> None:
+            pass
+
+    srv = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=srv.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{srv.server_address[1]}"
+    finally:
+        srv.shutdown()
+
+
+@pytest.fixture
+def idor_server() -> Callable[..., object]:
+    """Return a context manager: ``with idor_server(secret, vulnerable=True) as base_url: ...``."""
+    return _serve_idor
