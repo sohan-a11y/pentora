@@ -6,6 +6,13 @@ forward-chainer) and playbooks (py_trees) sit on top and are wired separately â€
 heavy/unmaintained deps out of the importable core.
 """
 from pentora.engine.blackboard import Blackboard
+from pentora.engine.capture import (
+    CaptureAddon,
+    CapturedTxn,
+    CaptureInput,
+    CapturePrimitive,
+    translate,
+)
 from pentora.engine.chainer import Pattern, Rule, RuleEngine
 from pentora.engine.facts import (
     FACT_TYPES,
@@ -54,6 +61,10 @@ __all__ = [
     "Blackboard",
     "BlastRadius",
     "Capability",
+    "CaptureAddon",
+    "CaptureInput",
+    "CapturePrimitive",
+    "CapturedTxn",
     "DeterministicValidator",
     "Fact",
     "Finding",
@@ -86,4 +97,5 @@ __all__ = [
     "Verdict",
     "new_id",
     "smoke_test",
+    "translate",
 ]

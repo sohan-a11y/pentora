@@ -49,6 +49,7 @@ dev = [
 browser = ["playwright>=1.47"]
 ai = []  # LLM providers use httpx only — no extra deps needed
 engine = ["py-trees>=2.2"]  # reactive-engine playbooks (behavior trees)
+capture = ["mitmproxy>=10"]  # live traffic capture primitive
 
 [project.scripts]
 pentora = "pentora.cli:main"
@@ -96,6 +97,12 @@ disallow_untyped_defs = false
 [[tool.mypy.overrides]]
 module = "py_trees.*"
 ignore_missing_imports = true
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "mitmproxy.*"
+ignore_missing_imports = true
+follow_imports = "skip"   # mitmproxy's own source uses 3.12 syntax; don't type-check it
 
 [[tool.mypy.overrides]]
 module = "pentora.engine.playbook"
