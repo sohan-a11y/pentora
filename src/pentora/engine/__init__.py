@@ -6,6 +6,7 @@ forward-chainer) and playbooks (py_trees) sit on top and are wired separately â€
 heavy/unmaintained deps out of the importable core.
 """
 from pentora.engine.blackboard import Blackboard
+from pentora.engine.chainer import Pattern, Rule, RuleEngine
 from pentora.engine.facts import (
     FACT_TYPES,
     AppIntentModel,
@@ -65,8 +66,11 @@ __all__ = [
     "ObservedEndpoint",
     "OllamaClassifier",
     "Parameter",
+    "Pattern",
     "Primitive",
     "PrimitiveResult",
+    "Rule",
+    "RuleEngine",
     "RunContext",
     "RunScope",
     "ScopeViolation",
