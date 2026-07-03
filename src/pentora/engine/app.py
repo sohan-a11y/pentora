@@ -28,6 +28,13 @@ from pentora.engine.ollama_client import OllamaClassifier
 from pentora.engine.playbook import jwt_rule, jwt_runner
 from pentora.engine.playbook_idor import idor_rule, idor_runner
 from pentora.engine.primitive import Governor, RateLimiter, RunContext, RunScope
+from pentora.engine.regression import (
+    Delta,
+    diff,
+    load_baseline,
+    render_markdown,
+    save_baseline,
+)
 from pentora.engine.report import build_report, write_markdown
 from pentora.engine.validator import DeterministicValidator
 
@@ -92,6 +99,24 @@ class Engine:
     def report_markdown(self, path: str | Path = "pentora-cart-report.md") -> str:
         out = write_markdown(self.bb, Path(path), target=self.target)
         return out.read_text(encoding="utf-8")
+
+    def save_baseline(self, path: str | Path = "pentora-baseline.json") -> Path:
+        """Snapshot the current findings as the accepted baseline for continuous runs."""
+        return save_baseline(self.bb, path, target=self.target)
+
+    def diff_baseline(self, path: str | Path = "pentora-baseline.json") -> Delta:
+        """Compare current findings against a saved baseline: new / resolved / persisting."""
+        return diff(load_baseline(path), self.bb)
+
+    def regression_markdown(
+        self,
+        baseline: str | Path = "pentora-baseline.json",
+        out: str | Path = "pentora-delta.md",
+    ) -> str:
+        """Write and return the regression delta report — only NEW findings should page you."""
+        md = render_markdown(self.diff_baseline(baseline), self.target)
+        Path(out).write_text(md, encoding="utf-8")
+        return md
 
 
 def start(
