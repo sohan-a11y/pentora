@@ -33,6 +33,8 @@ from pentora.engine.facts import (
     TestedNegative,
     new_id,
 )
+from pentora.engine.llm_primitive import Classifier, LlmClassifierPrimitive
+from pentora.engine.llm_rules import llm_heuristic_runner, llm_route_rule
 from pentora.engine.ollama_client import OllamaClassifier, smoke_test
 from pentora.engine.primitive import (
     BlastRadius,
@@ -70,6 +72,7 @@ __all__ = [
     "CapturePrimitive",
     "CapturedTxn",
     "CartEngine",
+    "Classifier",
     "DeterministicValidator",
     "Fact",
     "Finding",
@@ -80,6 +83,7 @@ __all__ = [
     "Hypothesis",
     "IdorValidator",
     "JwtForgeValidator",
+    "LlmClassifierPrimitive",
     "ObservedEndpoint",
     "OllamaClassifier",
     "Parameter",
@@ -104,6 +108,8 @@ __all__ = [
     "ValidatorStrategy",
     "Verdict",
     "build_report",
+    "llm_heuristic_runner",
+    "llm_route_rule",
     "new_id",
     "smoke_test",
     "translate",

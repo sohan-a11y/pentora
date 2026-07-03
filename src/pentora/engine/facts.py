@@ -58,7 +58,8 @@ class HttpTransaction(Fact):
     req_body: str | None = None
     status: int = 0
     resp_headers: dict[str, str] = Field(default_factory=dict)
-    resp_body_sha: str | None = None                       # body stored out-of-band by hash
+    resp_body_sha: str | None = None                       # full body kept out-of-band by hash
+    resp_body_snippet: str | None = None                   # truncated body for heuristic analysis
     role_label: str | None = None                          # which test identity made it
 
 

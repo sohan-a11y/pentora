@@ -140,10 +140,12 @@ def translate(txn: CapturedTxn) -> list[Fact]:
     body_sha = (
         hashlib.sha256(txn.resp_body.encode()).hexdigest()[:16] if txn.resp_body else None
     )
+    snippet = txn.resp_body[:2048] if txn.resp_body else None
     facts: list[Fact] = [
         HttpTransaction(
             source="capture", method=txn.method, url=txn.url, req_headers=redacted,
-            status=txn.status, resp_body_sha=body_sha, role_label=txn.role_label,
+            status=txn.status, resp_body_sha=body_sha, resp_body_snippet=snippet,
+            role_label=txn.role_label,
         )
     ]
 
