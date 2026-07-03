@@ -47,6 +47,7 @@ from pentora.engine.primitive import (
     ScopeViolation,
 )
 from pentora.engine.replay import HttpReplayPrimitive, ReplayInput
+from pentora.engine.report import build_report, write_json, write_markdown
 from pentora.engine.validator import (
     DeterministicValidator,
     IdorValidator,
@@ -102,7 +103,10 @@ __all__ = [
     "ValidationResult",
     "ValidatorStrategy",
     "Verdict",
+    "build_report",
     "new_id",
     "smoke_test",
     "translate",
+    "write_json",
+    "write_markdown",
 ]
