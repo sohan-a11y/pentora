@@ -18,6 +18,7 @@ from difflib import SequenceMatcher
 from enum import StrEnum
 from typing import Any
 
+from pentora.engine.disclosure_patterns import find_pii, find_stack_trace
 from pentora.engine.facts import Finding, Hypothesis, TestedNegative
 
 try:  # reuse the tested CVSS calculator from the core package
@@ -154,12 +155,57 @@ class SqliValidator(ValidatorStrategy):
         return ValidationResult(Verdict.REFUTED, "no boolean divergence (true vs false)")
 
 
+class PiiDisclosureValidator(ValidatorStrategy):
+    """Confirm an LLM-proposed PII leak only if the response bytes carry a high-confidence
+    pattern (Luhn-valid card, strict SSN, or a known secret). Refutes hallucinations."""
+
+    claim = "pii_leak"
+
+    def validate(self, hypo: Hypothesis, ev: dict[str, Any]) -> ValidationResult:
+        hits = find_pii(str(ev.get("body", "")))
+        ids = list(ev.get("evidence_ids", []))
+        if hits:
+            return ValidationResult(
+                Verdict.CONFIRMED,
+                f"sensitive data in response: {', '.join(hits[:5])}",
+                cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                poc="Fetch the endpoint; the response body contains the leaked data shown.",
+                evidence_ids=ids,
+            )
+        return ValidationResult(Verdict.REFUTED, "no high-confidence PII/secret pattern in body")
+
+
+class StackTraceValidator(ValidatorStrategy):
+    """Confirm an LLM-proposed stack-trace disclosure only on a real server-side trace signature."""
+
+    claim = "stack_trace_disclosure"
+
+    def validate(self, hypo: Hypothesis, ev: dict[str, Any]) -> ValidationResult:
+        stack = find_stack_trace(str(ev.get("body", "")))
+        ids = list(ev.get("evidence_ids", []))
+        if stack:
+            return ValidationResult(
+                Verdict.CONFIRMED,
+                f"{stack} stack trace / server error disclosed in response",
+                cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+                poc="Trigger the error path; the response leaks a server-side stack trace.",
+                evidence_ids=ids,
+            )
+        return ValidationResult(Verdict.REFUTED, "no stack-trace signature in body")
+
+
 class DeterministicValidator:
     """Registry + promotion. ``promote`` returns the fact to assert on the blackboard."""
 
     def __init__(self) -> None:
         self._strats: dict[str, ValidatorStrategy] = {}
-        for s in (IdorValidator(), JwtForgeValidator(), SqliValidator()):
+        for s in (
+            IdorValidator(),
+            JwtForgeValidator(),
+            SqliValidator(),
+            PiiDisclosureValidator(),
+            StackTraceValidator(),
+        ):
             self.register(s)
 
     def register(self, strat: ValidatorStrategy) -> None:

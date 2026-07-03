@@ -15,6 +15,7 @@ from pentora.engine.capture import (
 )
 from pentora.engine.cart import CartEngine
 from pentora.engine.chainer import Pattern, Rule, RuleEngine
+from pentora.engine.disclosure import disclosure_verify_rule, disclosure_verify_runner
 from pentora.engine.facts import (
     FACT_TYPES,
     AppIntentModel,
@@ -54,7 +55,9 @@ from pentora.engine.validator import (
     DeterministicValidator,
     IdorValidator,
     JwtForgeValidator,
+    PiiDisclosureValidator,
     SqliValidator,
+    StackTraceValidator,
     ValidationResult,
     ValidatorStrategy,
     Verdict,
@@ -84,6 +87,8 @@ __all__ = [
     "IdorValidator",
     "JwtForgeValidator",
     "LlmClassifierPrimitive",
+    "PiiDisclosureValidator",
+    "StackTraceValidator",
     "ObservedEndpoint",
     "OllamaClassifier",
     "Parameter",
@@ -108,6 +113,8 @@ __all__ = [
     "ValidatorStrategy",
     "Verdict",
     "build_report",
+    "disclosure_verify_rule",
+    "disclosure_verify_runner",
     "llm_heuristic_runner",
     "llm_route_rule",
     "new_id",
