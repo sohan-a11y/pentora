@@ -21,6 +21,7 @@ from pentora.engine.capture import CapturedTxn, CaptureInput, CapturePrimitive
 from pentora.engine.cart import CartEngine
 from pentora.engine.chainer import RuleEngine
 from pentora.engine.disclosure import disclosure_verify_rule, disclosure_verify_runner
+from pentora.engine.live import LiveProxy
 from pentora.engine.llm_primitive import Classifier
 from pentora.engine.llm_rules import llm_heuristic_runner, llm_route_rule
 from pentora.engine.ollama_client import OllamaClassifier
@@ -43,6 +44,18 @@ class Engine:
     bb: Blackboard
     cart: CartEngine
     scope: RunScope
+    proxy: LiveProxy | None = None
+
+    def start_proxy(self, port: int = 8080, host: str = "127.0.0.1") -> str:
+        """Start a live intercepting proxy that feeds the blackboard. Route a browser through the
+        returned URL; call run() to surface findings from the traffic so far. Needs mitmproxy."""
+        self.proxy = LiveProxy(self.bb, host=host, port=port, scope_hosts=self.scope.include)
+        return self.proxy.start()
+
+    def stop_proxy(self) -> None:
+        if self.proxy is not None:
+            self.proxy.stop()
+            self.proxy = None
 
     def ingest(self, transactions: list[CapturedTxn]) -> int:
         """Feed captured request/response pairs through capture; return fact count."""
