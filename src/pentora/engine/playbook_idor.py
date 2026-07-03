@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import re
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import py_trees
 from py_trees.behaviour import Behaviour
@@ -34,6 +35,9 @@ from pentora.engine.facts import (
 from pentora.engine.primitive import Governor, RunContext, RunScope
 from pentora.engine.replay import HttpReplayPrimitive, ReplayInput
 from pentora.engine.validator import DeterministicValidator
+
+if TYPE_CHECKING:
+    from pentora.engine.cart import CartEngine
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_@.:-]{4,}")
 
@@ -193,3 +197,15 @@ def dispatch_idor_from_facts(
         victim_url=victim_url, victim_token=victim.jwt, attacker_token=attacker.jwt,
         attacker_own_url=attacker_url, scope=scope,
     ))
+
+
+def idor_runner(engine: CartEngine, task: Task) -> None:
+    """CartEngine runner: resolve the idor hypothesis and dispatch the playbook from the board."""
+    hyp = next(
+        (h for h in engine.bb.query("hypothesis")
+         if isinstance(h, Hypothesis) and h.claim == "idor"),
+        None,
+    )
+    if hyp is None:
+        return
+    dispatch_idor_from_facts(engine.bb, engine.governor, engine.validator, hyp, scope=engine.scope)

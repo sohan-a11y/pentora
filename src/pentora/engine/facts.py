@@ -34,6 +34,12 @@ class Fact(BaseModel):
     confidence: float = 1.0                                   # 0..1
     derived_from: list[str] = Field(default_factory=list)     # parent fact ids (provenance)
 
+    @property
+    def dedup_key(self) -> str:
+        """Identity for blackboard dedup. Default: unique per instance (no dedup). Stable
+        entities (endpoints, identities, findings) override this with a content key."""
+        return self.id
+
 
 class Target(Fact):
     kind: Literal["target"] = "target"
@@ -65,6 +71,10 @@ class ObservedEndpoint(Fact):
     seen_count: int = 1
     auth_required: bool | None = None
 
+    @property
+    def dedup_key(self) -> str:
+        return f"endpoint|{self.method}|{self.template}"
+
 
 class Parameter(Fact):
     """An input point with an inferred semantic type."""
@@ -86,6 +96,10 @@ class SecurityContext(Fact):
     has_jwt: bool = False
     jwt: str | None = None
     cookies: dict[str, str] = Field(default_factory=dict)
+
+    @property
+    def dedup_key(self) -> str:
+        return f"sc|{self.role_label}|{self.jwt or ''}"
 
 
 class TechFingerprint(Fact):
@@ -138,6 +152,10 @@ class Finding(Fact):
     evidence: str = ""
     poc: str = ""
     chain: list[str] = Field(default_factory=list)           # fact ids forming the kill chain
+
+    @property
+    def dedup_key(self) -> str:
+        return f"finding|{self.title}|{self.endpoint_id or ''}|{self.evidence}"
 
 
 class TestedNegative(Fact):

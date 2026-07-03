@@ -13,6 +13,7 @@ from pentora.engine.capture import (
     CapturePrimitive,
     translate,
 )
+from pentora.engine.cart import CartEngine
 from pentora.engine.chainer import Pattern, Rule, RuleEngine
 from pentora.engine.facts import (
     FACT_TYPES,
@@ -66,6 +67,7 @@ __all__ = [
     "CaptureInput",
     "CapturePrimitive",
     "CapturedTxn",
+    "CartEngine",
     "DeterministicValidator",
     "Fact",
     "Finding",

@@ -18,6 +18,7 @@ import hashlib
 import hmac
 import json
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import py_trees
 from py_trees.behaviour import Behaviour
@@ -25,7 +26,17 @@ from py_trees.common import Status
 from pydantic import BaseModel
 
 from pentora.engine.blackboard import Blackboard
-from pentora.engine.facts import AttackAttempt, Hypothesis, Secret, TestedNegative
+from pentora.engine.chainer import Pattern, Rule, RuleEngine
+from pentora.engine.facts import (
+    AttackAttempt,
+    Fact,
+    HttpTransaction,
+    Hypothesis,
+    Secret,
+    SecurityContext,
+    Task,
+    TestedNegative,
+)
 from pentora.engine.primitive import (
     BlastRadius,
     Capability,
@@ -37,6 +48,9 @@ from pentora.engine.primitive import (
 )
 from pentora.engine.replay import HttpReplayPrimitive, ReplayInput
 from pentora.engine.validator import DeterministicValidator
+
+if TYPE_CHECKING:
+    from pentora.engine.cart import CartEngine
 
 # ---- offline HS256 crypto (real) -------------------------------------------
 
@@ -224,3 +238,54 @@ def run_jwt_playbook(pctx: JwtPlaybookContext) -> Status:
     tree = build_jwt_playbook(pctx)
     tree.tick_once()
     return tree.status
+
+
+# ---- CartEngine wiring: reusable rule + runner -----------------------------
+
+def _sc_has_jwt(f: Fact) -> bool:
+    return isinstance(f, SecurityContext) and f.has_jwt
+
+
+def jwt_rule() -> Rule:
+    """SOCKET: a SecurityContext carrying a JWT. TAB: a jwt_forge hypothesis + a queued task."""
+    def action(engine: RuleEngine, b: dict[str, Fact]) -> None:
+        sc = b["sc"]
+        engine.assert_fact(Hypothesis(source="jwt_rule", claim="jwt_forge", derived_from=[sc.id]))
+        engine.assert_fact(Task(source="jwt_rule", playbook="jwt_playbook", derived_from=[sc.id]))
+
+    return Rule(
+        name="jwt_seen",
+        patterns=[Pattern(kind="security_context", where=_sc_has_jwt, as_="sc")],
+        action=action,
+    )
+
+
+def jwt_runner(engine: CartEngine, task: Task) -> None:
+    """CartEngine runner: build a JwtPlaybookContext from the blackboard and run the playbook."""
+    bb = engine.bb
+    sc = next(
+        (f for f in bb.query("security_context")
+         if isinstance(f, SecurityContext) and f.has_jwt and f.jwt),
+        None,
+    )
+    hyp = next(
+        (h for h in bb.query("hypothesis") if isinstance(h, Hypothesis) and h.claim == "jwt_forge"),
+        None,
+    )
+    if sc is None or sc.jwt is None or hyp is None:
+        return
+    target = ""
+    for t in bb.query("http_txn"):
+        if isinstance(t, HttpTransaction) and t.source == "capture" and t.url.startswith("http"):
+            target = t.url
+            break
+    if not target:
+        target = str(engine.config.get("jwt_target", ""))
+    if not target:
+        return
+    raw = engine.config.get("wordlist", [])
+    wordlist = [str(w) for w in raw] if isinstance(raw, list) else []
+    run_jwt_playbook(JwtPlaybookContext(
+        bb=bb, governor=engine.governor, validator=engine.validator, hypothesis=hyp,
+        jwt=sc.jwt, wordlist=wordlist, target_url=target, scope=engine.scope,
+    ))

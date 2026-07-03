@@ -15,13 +15,19 @@ class Blackboard:
     def __init__(self) -> None:
         self._facts: dict[str, Fact] = {}
         self._by_kind: dict[str, list[str]] = {}
+        self._by_dedup: dict[str, str] = {}                   # dedup_key -> fact id
         self._subs: list[Callable[[Fact], None]] = []
 
     def assert_fact(self, f: Fact) -> Fact:
-        """Add a fact (idempotent by id) and notify subscribers. Returns the stored fact."""
+        """Add a fact and notify subscribers. Idempotent by id AND by content ``dedup_key``
+        (so duplicate endpoints/identities/findings collapse to one). Returns the stored fact."""
         if f.id in self._facts:
             return self._facts[f.id]
+        existing = self._by_dedup.get(f.dedup_key)
+        if existing is not None:
+            return self._facts[existing]
         self._facts[f.id] = f
+        self._by_dedup[f.dedup_key] = f.id
         self._by_kind.setdefault(f.kind, []).append(f.id)
         for cb in list(self._subs):
             cb(f)
