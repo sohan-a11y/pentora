@@ -7,8 +7,10 @@ read-only, and request budget BEFORE a packet is sent.
 """
 from __future__ import annotations
 
+import asyncio
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -108,6 +110,45 @@ class Primitive(ABC):
             yield f
 
 
+class RateLimiter:
+    """Async token bucket — caps ACTIVE requests per second across the whole engagement.
+
+    Enforces the ``rate_limit_rps`` the Capability declares, so a continuous engine can't
+    accidentally DoS a target. Injectable ``clock``/``sleep`` make the rate math deterministically
+    testable. ``rps <= 0`` means unlimited.
+    """
+
+    def __init__(
+        self,
+        rps: float,
+        burst: int | None = None,
+        clock: Callable[[], float] = time.monotonic,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    ) -> None:
+        self.rps = rps
+        self.capacity = float(burst if burst is not None else max(1, int(rps)))
+        self._tokens = self.capacity
+        self._last: float | None = None
+        self._clock = clock
+        self._sleep = sleep
+        self._lock = asyncio.Lock()
+
+    async def acquire(self) -> None:
+        if self.rps <= 0:
+            return
+        async with self._lock:
+            now = self._clock()
+            if self._last is None:
+                self._last = now
+            self._tokens = min(self.capacity, self._tokens + (now - self._last) * self.rps)
+            self._last = now
+            if self._tokens < 1:
+                await self._sleep((1 - self._tokens) / self.rps)
+                self._tokens = 0.0
+            else:
+                self._tokens -= 1
+
+
 @dataclass
 class GovernorDecision:
     allowed: bool
@@ -115,7 +156,14 @@ class GovernorDecision:
 
 
 class Governor:
-    """Wraps every primitive execution. Non-negotiable safety layer."""
+    """Wraps every primitive execution. Non-negotiable safety layer.
+
+    Optionally holds a shared ``RateLimiter`` — since every active primitive passes through
+    ``execute``, one limiter here caps the request rate for the entire engagement.
+    """
+
+    def __init__(self, rate_limiter: RateLimiter | None = None) -> None:
+        self.rate_limiter = rate_limiter
 
     def check(self, prim: Primitive, ctx: RunContext) -> GovernorDecision:
         cap = prim.capability
@@ -138,6 +186,9 @@ class Governor:
         decision = self.check(prim, ctx)
         if not decision.allowed:
             return PrimitiveResult(summary=decision.reason, is_error=True)
+        # Rate-limit active primitives (passive capture is never throttled).
+        if self.rate_limiter is not None and prim.capability.blast_radius != BlastRadius.PASSIVE:
+            await self.rate_limiter.acquire()
         t0 = time.monotonic()
         try:
             res = await prim.run(inp, ctx)
