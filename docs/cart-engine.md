@@ -70,10 +70,19 @@ pip install -e ".[engine,capture]"
 the LLM adds smarter "where to look" routing.
 
 ```bash
-# install Ollama (https://ollama.com), then pull a small local model:
+# install Ollama (https://ollama.com), then pull the default model:
 ollama serve &
-ollama pull qwen3:8b
+ollama pull hf.co/HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M
 ```
+
+> **Why an "uncensored" fine-tune?** The LLM here only does one job: classify a captured HTTP
+> transaction into a vulnerability category (JSON, temperature 0) so a deterministic playbook knows
+> where to look — it never decides anything is a bug (see §1). Safety-tuned base models sometimes
+> refuse or hedge on this kind of "does this look exploitable" framing even for entirely benign,
+> authorized security testing, which shows up as **false negatives** — hunches that never get
+> raised. This community fine-tune of Qwen3.5-9B (Apache-2.0, GGUF on Hugging Face) removes those
+> refusals for this narrow classification task. Prefer the stock model instead? Any Ollama tag
+> works — swap it into every `model=`/`--model` below, e.g. `ollama pull qwen3.5:9b`.
 
 ---
 
@@ -84,7 +93,8 @@ Four lines from capture to report:
 ```python
 from pentora.engine.app import start
 
-e = start(target="https://app.example.com", model="qwen3:8b", scope_hosts=["app.example.com"])
+MODEL = "hf.co/HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M"
+e = start(target="https://app.example.com", model=MODEL, scope_hosts=["app.example.com"])
 e.ingest_har("traffic.har")     # a HAR export from browser DevTools (Network tab → Save all as HAR)
 e.run()                         # autonomous: chain hunches → test → validate
 print(e.report_markdown("report.md"))   # findings + provable coverage
@@ -148,7 +158,8 @@ pentora-cart serve --target https://app.example.com --har traffic.har --once
 ```
 
 **Common flags** (all modes): `--target` (required), `--scope host1 host2` (in-scope hosts),
-`--model qwen3:8b`, `--ollama-host http://127.0.0.1:11434`, `--rps 5` (global request-rate cap).
+`--model hf.co/HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M` (any Ollama tag works —
+see the note in §3), `--ollama-host http://127.0.0.1:11434`, `--rps 5` (global request-rate cap).
 
 ### Running it as a real service on Linux
 `serve` is a foreground loop by design — let **systemd** (or Docker/`nohup`) daemonize it:
@@ -172,8 +183,13 @@ Generate a ready-to-run notebook (sets up mitmproxy + a background Ollama, then 
 
 ```python
 from pentora.engine.colab import write_notebook
-write_notebook("pentora_cart.ipynb", target="https://app.example.com", model="qwen3:8b")
+write_notebook("pentora_cart.ipynb", target="https://app.example.com",
+                model="hf.co/HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M")
 ```
+
+Or open the pre-built [`colab/pentora_cart_colab.ipynb`](../colab/pentora_cart_colab.ipynb) directly
+via **[colab.research.google.com/github/sohan-a11y/pentora/blob/feature/engine-core/colab/pentora_cart_colab.ipynb](https://colab.research.google.com/github/sohan-a11y/pentora/blob/feature/engine-core/colab/pentora_cart_colab.ipynb)**
+— it already does all of the above and includes a self-contained demo that needs no external target.
 
 Open the `.ipynb` in Colab and run the two cells. Nothing leaves the VM.
 
@@ -210,7 +226,8 @@ Every active request passes through a single **Governor** chokepoint that enforc
 | Symptom | Fix |
 |---------|-----|
 | `ModuleNotFoundError: py_trees` / `mitmproxy` | `pip install -e ".[engine,capture]"` |
-| Findings all say the LLM part was skipped | Start Ollama (`ollama serve`) and `ollama pull <model>`; deterministic playbooks still run without it |
+| Findings all say the LLM part was skipped | Start Ollama (`ollama serve`) and `ollama pull hf.co/HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M` (or any model); deterministic playbooks still run without it |
+| `ollama pull hf.co/...` seems to hang | It's downloading silently in a non-interactive shell — check `!ollama list` / `du -sh ~/.ollama/models` in another cell; a fresh pull can take a couple of minutes |
 | `serve` exits immediately with "needs a traffic source" | add `--proxy` or `--har` — it refuses to pretend-monitor nothing |
 | Proxy `run` returns zero findings | make sure your browser actually routed through `http://127.0.0.1:<port>` and the host is in `--scope` |
 | HTTPS traffic not captured via proxy | install the mitmproxy CA cert in your browser (see mitmproxy docs) |

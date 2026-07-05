@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pentora.engine.colab import build_notebook, setup_script, write_notebook
+from pentora.engine.colab import DEFAULT_MODEL, build_notebook, setup_script, write_notebook
 
 
 def test_setup_script_installs_mitmproxy_and_boots_ollama() -> None:
@@ -30,3 +30,11 @@ def test_write_notebook_roundtrips(tmp_path: Path) -> None:
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["nbformat"] == 4
     assert any("qwen3:14b" in "".join(c["source"]) for c in doc["cells"])
+
+
+def test_default_model_is_used_when_none_is_given() -> None:
+    assert DEFAULT_MODEL in setup_script()
+    nb = build_notebook()
+    all_src = "".join("".join(c["source"]) for c in nb["cells"])
+    assert DEFAULT_MODEL in all_src
+    assert "zstd" in "".join("".join(c["source"]) for c in nb["cells"])   # Colab needs it to install Ollama
