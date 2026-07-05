@@ -53,6 +53,7 @@ capture = ["mitmproxy>=10"]  # live traffic capture primitive
 
 [project.scripts]
 pentora = "pentora.cli:main"
+pentora-cart = "pentora.engine.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
