@@ -63,6 +63,29 @@ def test_idor_confirmed_against_vulnerable_server(idor_server) -> None:  # noqa:
     assert findings[0].severity in ("medium", "high")
 
 
+def test_idor_playbook_runs_from_inside_a_running_event_loop(idor_server) -> None:  # noqa: ANN001
+    """Reproduces the exact Colab/Jupyter failure: the kernel executes cell code as a coroutine
+    on an already-running event loop, so a playbook's internal ``asyncio.run()`` used to raise
+    ``RuntimeError: asyncio.run() cannot be called from a running event loop``."""
+    secret = "s3cr3t"
+    jwt_a, jwt_b = _jwt(secret, "user_a"), _jwt(secret, "user_b")
+    bb = Blackboard()
+    hyp = bb.assert_fact(Hypothesis(source="t", claim="idor"))
+
+    async def _drive_from_notebook_like_loop(base: str) -> Status:
+        asyncio.get_running_loop()                        # sanity: a loop really is running here
+        return run_idor_playbook(IdorPlaybookContext(
+            bb=bb, governor=Governor(), validator=DeterministicValidator(), hypothesis=hyp,
+            victim_url=f"{base}/api/orders/1", victim_token=jwt_a,
+            attacker_token=jwt_b, attacker_own_url=f"{base}/api/orders/2",
+        ))
+
+    with idor_server(secret, vulnerable=True) as base:
+        status = asyncio.run(_drive_from_notebook_like_loop(base))
+    assert status == Status.SUCCESS
+    assert len(bb.query("finding")) == 1
+
+
 def test_idor_refuted_against_secure_server(idor_server) -> None:  # noqa: ANN001
     secret = "s3cr3t"
     jwt_a, jwt_b = _jwt(secret, "user_a"), _jwt(secret, "user_b")

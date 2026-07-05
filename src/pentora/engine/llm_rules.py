@@ -5,9 +5,9 @@ the native chainer's ``Pattern``/``Rule`` and the CartEngine runner registry ins
 """
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING
 
+from pentora.engine.asyncrun import run_sync
 from pentora.engine.chainer import Pattern, Rule, RuleEngine
 from pentora.engine.facts import Fact, HttpTransaction, Task
 from pentora.engine.llm_primitive import Classifier, LlmClassifierPrimitive
@@ -57,7 +57,7 @@ def llm_heuristic_runner(engine: CartEngine, task: Task) -> None:
     tx = engine.bb.get(str(txn_id)) if txn_id else None
     if not isinstance(tx, HttpTransaction):
         return
-    res = asyncio.run(engine.governor.execute(
+    res = run_sync(engine.governor.execute(
         LlmClassifierPrimitive(ollama), tx,
         RunContext(scope=engine.scope or RunScope(), blackboard=engine.bb),
     ))

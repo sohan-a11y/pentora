@@ -10,7 +10,6 @@ so the engine stays read-only. All attack requests go through the Governor.
 """
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
@@ -19,6 +18,7 @@ import py_trees
 from py_trees.behaviour import Behaviour
 from py_trees.common import Status
 
+from pentora.engine.asyncrun import run_sync
 from pentora.engine.blackboard import Blackboard
 from pentora.engine.chainer import Pattern, Rule, RuleEngine
 from pentora.engine.facts import (
@@ -67,7 +67,7 @@ class BolaPlaybookContext:
 
 def _replay(pctx: BolaPlaybookContext, url: str, token: str, role: str) -> tuple[int, str]:
     scope = pctx.effective_scope()
-    res = asyncio.run(
+    res = run_sync(
         pctx.governor.execute(
             HttpReplayPrimitive(),
             ReplayInput(url=url, token=token, role_label=role),

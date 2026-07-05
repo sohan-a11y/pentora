@@ -10,12 +10,12 @@ Requires the optional playbook deps (``pip install 'pentora[engine,capture]'``).
 """
 from __future__ import annotations
 
-import asyncio
 import json
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from pentora.engine.asyncrun import run_sync
 from pentora.engine.blackboard import Blackboard
 from pentora.engine.capture import CapturedTxn, CaptureInput, CapturePrimitive
 from pentora.engine.cart import CartEngine
@@ -71,7 +71,7 @@ class Engine:
 
     def ingest(self, transactions: list[CapturedTxn]) -> int:
         """Feed captured request/response pairs through capture; return fact count."""
-        asyncio.run(self.cart.governor.execute(
+        run_sync(self.cart.governor.execute(
             CapturePrimitive(), CaptureInput(transactions=transactions),
             RunContext(scope=self.scope, blackboard=self.bb),
         ))

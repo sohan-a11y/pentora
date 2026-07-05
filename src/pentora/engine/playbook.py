@@ -12,7 +12,6 @@ Imports ``py_trees`` (optional dep, install ``pentora[engine]``), so it is NOT r
 """
 from __future__ import annotations
 
-import asyncio
 import base64
 import hashlib
 import hmac
@@ -25,6 +24,7 @@ from py_trees.behaviour import Behaviour
 from py_trees.common import Status
 from pydantic import BaseModel
 
+from pentora.engine.asyncrun import run_sync
 from pentora.engine.blackboard import Blackboard
 from pentora.engine.chainer import Pattern, Rule, RuleEngine
 from pentora.engine.facts import (
@@ -153,7 +153,7 @@ class JwtPlaybookContext:
 def _replay(pctx: JwtPlaybookContext, token: str, role: str) -> tuple[int, str]:
     """Fire a real request with ``token`` via the Governor; return (status, body)."""
     scope = pctx.scope or RunScope(read_only=True)
-    res = asyncio.run(
+    res = run_sync(
         pctx.governor.execute(
             HttpReplayPrimitive(),
             ReplayInput(url=pctx.target_url, token=token, role_label=role),
@@ -206,7 +206,7 @@ class _BruteForgeLeaf(Behaviour):
 
     def update(self) -> Status:
         p = self.pctx
-        res = asyncio.run(
+        res = run_sync(
             p.governor.execute(
                 JwtForgePrimitive(),
                 JwtInput(jwt=p.jwt, wordlist=p.wordlist),

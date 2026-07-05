@@ -12,7 +12,6 @@ the deterministic ``IdorValidator`` promotes the Finding. All requests go throug
 """
 from __future__ import annotations
 
-import asyncio
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -21,6 +20,7 @@ import py_trees
 from py_trees.behaviour import Behaviour
 from py_trees.common import Status
 
+from pentora.engine.asyncrun import run_sync
 from pentora.engine.blackboard import Blackboard
 from pentora.engine.chainer import Pattern, Rule, RuleEngine
 from pentora.engine.facts import (
@@ -62,7 +62,7 @@ class IdorPlaybookContext:
 
 def _replay(pctx: IdorPlaybookContext, url: str, token: str, role: str) -> tuple[int, str]:
     scope = pctx.scope or RunScope(read_only=True)
-    res = asyncio.run(
+    res = run_sync(
         pctx.governor.execute(
             HttpReplayPrimitive(),
             ReplayInput(url=url, token=token, role_label=role),
