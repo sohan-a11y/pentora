@@ -25,7 +25,13 @@ T = TypeVar("T")
 
 
 def run_sync(coro: Coroutine[Any, Any, T]) -> T:
-    """Run ``coro`` to completion and return its result, regardless of an ambient running loop."""
+    """Run ``coro`` to completion and return its result, regardless of an ambient running loop.
+
+    Call this DIRECTLY from sync code — never wrap the call site in your own ``asyncio.run()``.
+    Inside a notebook kernel the ambient loop already exists (that's the whole reason this
+    function exists); an extra ``asyncio.run()`` around it is itself an invalid nested call and
+    raises before ``run_sync`` ever runs.
+    """
     try:
         asyncio.get_running_loop()
     except RuntimeError:
