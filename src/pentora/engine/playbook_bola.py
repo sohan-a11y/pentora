@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 import py_trees
 from py_trees.behaviour import Behaviour
@@ -28,6 +29,7 @@ from pentora.engine.facts import (
     Task,
     TestedNegative,
 )
+from pentora.engine.playbook_idor import _distinguishing_marker
 from pentora.engine.primitive import Governor, RunContext, RunScope
 from pentora.engine.replay import HttpReplayPrimitive, ReplayInput
 from pentora.engine.validator import DeterministicValidator
@@ -45,10 +47,17 @@ class BolaPlaybookContext:
     validator: DeterministicValidator
     hypothesis: Hypothesis
     object_url: str                                     # victim-created object (a captured write)
-    victim_marker: str                                  # the object's secret, seen in that write
+    victim_body: str                                    # the victim object's bytes, from that write
     attacker_token: str
     attacker_control_url: str                           # the attacker's OWN object (control)
     scope: RunScope | None = None
+
+    def effective_scope(self) -> RunScope:
+        """Fall back to the object host — never an empty (allow-all) scope — when none is given."""
+        if self.scope is not None:
+            return self.scope
+        host = urlsplit(self.object_url).hostname or self.object_url
+        return RunScope(include=[host], read_only=True)
 
     def record_negative(self, what: str) -> None:
         self.bb.assert_fact(
@@ -57,7 +66,7 @@ class BolaPlaybookContext:
 
 
 def _replay(pctx: BolaPlaybookContext, url: str, token: str, role: str) -> tuple[int, str]:
-    scope = pctx.scope or RunScope(read_only=True)
+    scope = pctx.effective_scope()
     res = asyncio.run(
         pctx.governor.execute(
             HttpReplayPrimitive(),
@@ -79,16 +88,19 @@ class _BolaLeaf(Behaviour):
         p = self.pctx
         # Control: the attacker reads their OWN object — what they are meant to see.
         _, control_body = _replay(p, p.attacker_control_url, p.attacker_token, "bola_control")
+        # Distill a compact victim-only token from the observed object bytes, so the proof
+        # survives field reordering / formatting differences between the write and the read.
+        marker = _distinguishing_marker(p.victim_body, control_body)
 
         reps = 0
         attack_body = ""
         for _ in range(2):
             status, attack_body = _replay(p, p.object_url, p.attacker_token, "bola_attacker")
-            if status == 200 and p.victim_marker in attack_body:
+            if status == 200 and marker in attack_body:
                 reps += 1
 
         fact = p.validator.promote(p.hypothesis, {
-            "victim_marker": p.victim_marker,
+            "victim_marker": marker,
             "attacker_response_body": attack_body,
             "attacker_control_body": control_body,
             "repetitions": reps,
@@ -187,7 +199,7 @@ def dispatch_bola_from_facts(
         return None
     return run_bola_playbook(BolaPlaybookContext(
         bb=bb, governor=governor, validator=validator, hypothesis=hypothesis,
-        object_url=write.url, victim_marker=write.resp_body_snippet,
+        object_url=write.url, victim_body=write.resp_body_snippet,
         attacker_token=attacker.jwt, attacker_control_url=control.url, scope=scope,
     ))
 

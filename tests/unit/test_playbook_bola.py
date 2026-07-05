@@ -56,7 +56,7 @@ def test_bola_confirmed_against_vulnerable_server(bola_server) -> None:  # noqa:
         oa, ob = _create(base, ja), _create(base, jb)
         status = run_bola_playbook(BolaPlaybookContext(
             bb=bb, governor=Governor(), validator=DeterministicValidator(), hypothesis=hyp,
-            object_url=f"{base}/api/objects/{oa['id']}", victim_marker=oa["secret"],
+            object_url=f"{base}/api/objects/{oa['id']}", victim_body=oa["secret"],
             attacker_token=jb, attacker_control_url=f"{base}/api/objects/{ob['id']}",
         ))
     assert status == Status.SUCCESS
@@ -74,12 +74,32 @@ def test_bola_refuted_against_secure_server(bola_server) -> None:  # noqa: ANN00
         oa, ob = _create(base, ja), _create(base, jb)
         status = run_bola_playbook(BolaPlaybookContext(
             bb=bb, governor=Governor(), validator=DeterministicValidator(), hypothesis=hyp,
-            object_url=f"{base}/api/objects/{oa['id']}", victim_marker=oa["secret"],
+            object_url=f"{base}/api/objects/{oa['id']}", victim_body=oa["secret"],
             attacker_token=jb, attacker_control_url=f"{base}/api/objects/{ob['id']}",
         ))
     assert status == Status.FAILURE
     assert not bb.query("finding")
     assert bb.query("tested_negative")
+
+
+def test_bola_confirmed_with_full_json_write_snippet(bola_server) -> None:  # noqa: ANN001
+    """Regression: a live write snippet is the whole object body, not a bare token. The playbook
+    must distill a distinguishing marker so the proof survives create-vs-read formatting drift."""
+    secret = "s3cr3t"
+    ja, jb = _jwt(secret, "user_a"), _jwt(secret, "user_b")
+    bb = Blackboard()
+    hyp = bb.assert_fact(Hypothesis(source="t", claim="bola"))
+    with bola_server(secret, vulnerable=True) as base:
+        oa, ob = _create(base, ja), _create(base, jb)
+        # Full create-response body with the fields in a different order than the read returns.
+        victim_body = json.dumps({"owner": "user_a", "id": oa["id"], "secret": oa["secret"]})
+        status = run_bola_playbook(BolaPlaybookContext(
+            bb=bb, governor=Governor(), validator=DeterministicValidator(), hypothesis=hyp,
+            object_url=f"{base}/api/objects/{oa['id']}", victim_body=victim_body,
+            attacker_token=jb, attacker_control_url=f"{base}/api/objects/{ob['id']}",
+        ))
+    assert status == Status.SUCCESS
+    assert len(bb.query("finding")) == 1
 
 
 def test_bola_dispatch_from_captured_write_state(bola_server) -> None:  # noqa: ANN001

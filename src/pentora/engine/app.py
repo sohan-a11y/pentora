@@ -59,6 +59,8 @@ class Engine:
     def start_proxy(self, port: int = 8080, host: str = "127.0.0.1") -> str:
         """Start a live intercepting proxy that feeds the blackboard. Route a browser through the
         returned URL; call run() to surface findings from the traffic so far. Needs mitmproxy."""
+        if self.proxy is not None:                     # never orphan a previously running proxy
+            self.stop_proxy()
         self.proxy = LiveProxy(self.bb, host=host, port=port, scope_hosts=self.scope.include)
         return self.proxy.start()
 

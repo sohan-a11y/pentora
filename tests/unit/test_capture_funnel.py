@@ -17,9 +17,9 @@ import pytest
 from pentora.engine import (
     Blackboard,
     CaptureAddon,
+    CapturedTxn,
     CaptureInput,
     CapturePrimitive,
-    CapturedTxn,
     Governor,
     RunContext,
     RunScope,

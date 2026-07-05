@@ -5,8 +5,8 @@ import pytest
 from pydantic import BaseModel
 
 from pentora.engine import (
-    BlastRadius,
     Blackboard,
+    BlastRadius,
     Capability,
     DeterministicValidator,
     Finding,

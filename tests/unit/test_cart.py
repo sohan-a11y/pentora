@@ -11,9 +11,9 @@ import pytest
 
 from pentora.engine import (
     Blackboard,
+    CapturedTxn,
     CaptureInput,
     CapturePrimitive,
-    CapturedTxn,
     CartEngine,
     DeterministicValidator,
     Governor,

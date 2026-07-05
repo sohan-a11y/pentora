@@ -45,3 +45,22 @@ def test_live_proxy_captures_traffic(jwt_server) -> None:  # noqa: ANN001
         assert any("/api/orders" in t.url for t in txns)
     finally:
         e.stop_proxy()
+
+
+def test_live_proxy_start_fails_loudly_on_occupied_port() -> None:
+    """Regression: readiness was signalled before the socket bound, so a port-in-use start could
+    report false success. start() must actively confirm the listener and raise otherwise."""
+    from pentora.engine.blackboard import Blackboard
+    from pentora.engine.live import LiveProxy
+
+    blocker = socket.socket()
+    blocker.bind(("127.0.0.1", 0))
+    blocker.listen(1)
+    busy_port = int(blocker.getsockname()[1])
+    proxy = LiveProxy(Blackboard(), host="127.0.0.1", port=busy_port)
+    try:
+        with pytest.raises(RuntimeError):
+            proxy.start(timeout=5.0)
+    finally:
+        proxy.stop()
+        blocker.close()

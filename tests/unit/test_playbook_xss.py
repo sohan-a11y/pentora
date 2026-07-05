@@ -64,6 +64,18 @@ def test_xss_reactive_dispatch_from_capture(xss_server) -> None:  # noqa: ANN001
     assert len(bb.query("finding")) == 1
 
 
+def test_xss_no_scope_defaults_to_target_host_not_allow_all() -> None:
+    # Regression: an absent scope must fail closed to the target host, never allow-all.
+    ctx = XssPlaybookContext(
+        bb=Blackboard(), governor=Governor(), validator=DeterministicValidator(),
+        hypothesis=Hypothesis(source="t", claim="xss"),
+        target_url="http://target.example/echo?name=foo", param="name",
+    )
+    scope = ctx.effective_scope()
+    assert scope.include == ["target.example"]
+    assert not scope.in_scope("http://third-party.example/x")
+
+
 def test_xss_rule_fires_on_a_parameterized_request() -> None:
     bb = Blackboard()
     eng = RuleEngine(bb)

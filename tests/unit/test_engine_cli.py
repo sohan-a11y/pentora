@@ -149,3 +149,9 @@ def test_serve_loop_silent_when_no_new_findings(tmp_path: Path) -> None:
 
 def test_main_without_command_returns_2() -> None:
     assert main([]) == 2
+
+
+def test_serve_without_traffic_source_returns_2() -> None:
+    # Regression: serve with no --proxy and no --har would silently monitor an empty blackboard
+    # forever. It must refuse instead of pretending to scan.
+    assert main(["serve", "--target", "http://x"]) == 2

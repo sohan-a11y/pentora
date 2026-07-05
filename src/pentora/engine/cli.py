@@ -8,10 +8,11 @@ Four modes:
   serve     continuous daemon: rescan on an interval and alert only on NEW findings
 
 ``serve`` is a foreground loop by design — run it under a process supervisor
-(systemd, Docker, ``nohup``) to daemonize it on a Linux box, e.g.::
+(systemd, Docker, ``nohup``) to daemonize it on a Linux box. It needs a traffic
+source each cycle (``--proxy`` live capture or a re-ingested ``--har``), e.g.::
 
     [Service]
-    ExecStart=pentora-cart serve --target https://app.example.com --interval 3600
+    ExecStart=pentora-cart serve --target https://app.example.com --proxy --interval 3600
 
 stdlib argparse only (no new dependency). The orchestration is split from argument parsing so
 ``run_once`` / ``serve_loop`` are unit-testable against any engine-shaped object.
@@ -66,22 +67,31 @@ def _default_alert(delta: Any) -> None:
     log.warning("REGRESSION: %d new finding(s): %s", len(delta.new), titles)
 
 
+def _scan(engine: EngineLike, prepare: Callable[[EngineLike], None], report: str | Path) -> None:
+    prepare(engine)                                      # seed traffic: live capture or HAR ingest
+    engine.run()
+    engine.report_markdown(report)
+
+
 def serve_loop(
     engine_factory: Callable[[], EngineLike],
     interval: float,
     iterations: int | None = None,
-    har: str | None = None,
+    prepare: Callable[[EngineLike], None] | None = None,
     baseline: str = "pentora-baseline.json",
     report: str | Path = "pentora-cart-report.md",
     sleeper: Callable[[float], None] = time.sleep,
     alert: Callable[[Any], None] = _default_alert,
 ) -> int:
-    """Continuous CART loop. Each cycle builds a FRESH engine (fresh blackboard), rescans, and
-    diffs against the persisted baseline — so only genuinely new exposure fires an alert. Bounds
-    to ``iterations`` cycles when given (``None`` runs until interrupted). Returns cycles run."""
+    """Continuous CART loop. Each cycle builds a FRESH engine (fresh blackboard), runs ``prepare``
+    to feed it fresh traffic, rescans, and diffs against the persisted baseline — so only genuinely
+    new exposure fires an alert. Without a ``prepare`` that seeds traffic the loop would rescan an
+    empty blackboard and never alert; callers must supply one. Bounds to ``iterations`` cycles when
+    given (``None`` runs until interrupted). Returns cycles run."""
+    prepare = prepare or (lambda _e: None)
     if not Path(baseline).exists():
         first = engine_factory()
-        run_once(first, har=har, report=report)
+        _scan(first, prepare, report)
         first.save_baseline(baseline)
         log.info("baseline established at %s", baseline)
 
@@ -89,8 +99,9 @@ def serve_loop(
     while iterations is None or n < iterations:
         n += 1
         sleeper(interval)
-        res = run_once(engine_factory(), har=har, report=report, baseline=baseline)
-        delta = res.get("delta")
+        engine = engine_factory()
+        _scan(engine, prepare, report)
+        delta = engine.diff_baseline(baseline)
         if delta is not None and getattr(delta, "has_regressions", False):
             alert(delta)
         else:
@@ -152,11 +163,24 @@ def _cmd_proxy(args: argparse.Namespace) -> int:
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
+    if not args.har and not args.proxy:
+        log.error("serve needs a traffic source each cycle: pass --proxy or --har FILE")
+        return 2
+
+    def prepare(engine: EngineLike) -> None:
+        if args.proxy:
+            engine.start_proxy(port=args.port, host=args.host)
+            log.info("capturing live traffic for %ss (route a browser through it)", args.capture)
+            time.sleep(args.capture)
+            engine.stop_proxy()
+        elif args.har:
+            engine.ingest_har(args.har)
+
     serve_loop(
         lambda: _make_engine(args),
         interval=args.interval,
         iterations=1 if args.once else None,
-        har=args.har,
+        prepare=prepare,
         baseline=args.baseline,
         report=args.report,
     )
@@ -202,7 +226,11 @@ def build_parser() -> argparse.ArgumentParser:
         "serve", parents=[eng], help="continuous daemon: rescan on an interval, alert on deltas"
     )
     serve.add_argument("--interval", type=float, default=3600.0, help="seconds between scans")
-    serve.add_argument("--har", help="HAR export to re-ingest each cycle")
+    serve.add_argument("--proxy", action="store_true", help="capture live traffic each cycle")
+    serve.add_argument("--capture", type=float, default=60.0, help="proxy capture window (seconds)")
+    serve.add_argument("--host", default="127.0.0.1", help="proxy bind host")
+    serve.add_argument("--port", type=int, default=8080, help="proxy bind port")
+    serve.add_argument("--har", help="HAR export to re-ingest each cycle (alternative to --proxy)")
     serve.add_argument("--baseline", default="pentora-baseline.json")
     serve.add_argument("--report", default="pentora-cart-report.md")
     serve.add_argument("--once", action="store_true", help="run a single cycle and exit")

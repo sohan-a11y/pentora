@@ -193,7 +193,10 @@ class XssValidator(ValidatorStrategy):
         ids = list(ev.get("evidence_ids", []))
         if not payload:
             return ValidationResult(Verdict.INCONCLUSIVE, "no payload marker to search for")
-        html_ctx = "html" in ctype or "<html" in body.lower()
+        # Fail closed: only an HTML content-type proves the markup would be parsed/executed.
+        # A body-substring sniff would let a JSON/text response reflecting the payload verbatim
+        # be minted as a false-positive XSS.
+        html_ctx = "html" in ctype
         if payload in body and html_ctx:
             return ValidationResult(
                 Verdict.CONFIRMED,

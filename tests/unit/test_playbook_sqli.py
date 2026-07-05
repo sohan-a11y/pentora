@@ -64,6 +64,21 @@ def test_sqli_reactive_dispatch_from_capture(sqli_server) -> None:  # noqa: ANN0
     assert len(bb.query("finding")) == 1
 
 
+def test_sqli_no_scope_defaults_to_target_host_not_allow_all() -> None:
+    # Regression: an absent scope must fail closed to the target host, never an empty (allow-all)
+    # include that would let injected requests hit any captured host.
+    bb = Blackboard()
+    hyp = Hypothesis(source="t", claim="sqli")
+    ctx = SqliPlaybookContext(
+        bb=bb, governor=Governor(), validator=DeterministicValidator(), hypothesis=hyp,
+        target_url="http://target.example/search?q=alpha", param="q",
+    )
+    scope = ctx.effective_scope()
+    assert scope.include == ["target.example"]
+    assert scope.in_scope("http://target.example/x")
+    assert not scope.in_scope("http://third-party.example/x")
+
+
 def test_sqli_rule_fires_on_a_parameterized_request() -> None:
     bb = Blackboard()
     eng = RuleEngine(bb)

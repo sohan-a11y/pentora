@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 import py_trees
 from py_trees.behaviour import Behaviour
@@ -45,6 +46,13 @@ class XssPlaybookContext:
         """A unique, deterministic reflection marker tied to this hypothesis."""
         return f"pentoraXSS{self.hypothesis.id[:8]}()"
 
+    def effective_scope(self) -> RunScope:
+        """Fall back to the target host — never an empty (allow-all) scope — when none is given."""
+        if self.scope is not None:
+            return self.scope
+        host = urlsplit(self.target_url).hostname or self.target_url
+        return RunScope(include=[host], read_only=True)
+
     def record_negative(self, what: str) -> None:
         self.bb.assert_fact(
             TestedNegative(source="xss_playbook", what=what, derived_from=[self.hypothesis.id])
@@ -52,7 +60,7 @@ class XssPlaybookContext:
 
 
 def _replay(pctx: XssPlaybookContext, url: str, role: str) -> tuple[str, str]:
-    scope = pctx.scope or RunScope(read_only=True)
+    scope = pctx.effective_scope()
     res = asyncio.run(
         pctx.governor.execute(
             HttpReplayPrimitive(),

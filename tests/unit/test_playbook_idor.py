@@ -16,9 +16,9 @@ from py_trees.common import Status  # noqa: E402
 
 from pentora.engine import (  # noqa: E402
     Blackboard,
+    CapturedTxn,
     CaptureInput,
     CapturePrimitive,
-    CapturedTxn,
     DeterministicValidator,
     Governor,
     Hypothesis,
