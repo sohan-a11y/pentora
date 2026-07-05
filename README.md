@@ -14,6 +14,11 @@ Pentora runs a full web-application penetration test from a single command. It c
 
 **16 security phases**: recon, discovery, auth, authz, injection, upload, ssrf, logic, disclosure, transport, headers, cors, takeover, ratelimit, mobile, cloud.
 
+> **New: Continuous Automated Red Teaming (`pentora-cart`).** Beyond the one-shot scanner, Pentora
+> now ships an autonomous engine that watches live traffic, forms security hunches, and only reports
+> a bug when a deterministic check can *prove* it — then keeps running and alerts you only on new
+> findings. See **[docs/cart-engine.md](docs/cart-engine.md)** for the plain-English guide and how to run it.
+
 ## Install
 
 ### One-line (Kali Linux / Debian)
