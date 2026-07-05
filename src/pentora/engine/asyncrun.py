@@ -4,14 +4,20 @@ Playbooks and the ``Engine`` facade call async ``Primitive``s from synchronous c
 ``update()`` methods, dataclass methods). ``asyncio.run()`` is correct when nothing else owns the
 event loop — the common case in scripts and tests — but it raises ``RuntimeError`` when called
 from inside a host that already runs one. Notably: Jupyter/IPython/Colab kernels, which execute
-cell code as a coroutine on the kernel's own loop, and any async web framework. Detect that case
-and run the coroutine on a fresh loop in a dedicated thread instead, so the same sync call works
-both in a plain script and inside a notebook.
+cell code as a coroutine on the kernel's own loop.
+
+A dedicated-thread-with-a-fresh-loop is the "textbook" fix for this and works in plain CPython,
+but Google Colab's kernel runtime does not isolate a new thread's asyncio state cleanly in
+practice — a fresh ``asyncio.run()`` on a brand-new thread has been observed to still raise the
+same "cannot be called from a running event loop" error there (likely a uvloop or kernel-specific
+peculiarity). ``nest_asyncio`` sidesteps this entirely by patching the *existing*, already-running
+loop to be re-entrant instead of creating a new one — it is the standard, purpose-built fix for
+exactly this class of problem, and does not depend on thread/loop isolation working correctly in
+the host. Lazily imported: scripts and tests that never hit a running loop never need it installed.
 """
 from __future__ import annotations
 
 import asyncio
-import threading
 from collections.abc import Coroutine
 from typing import Any, TypeVar
 
@@ -25,18 +31,7 @@ def run_sync(coro: Coroutine[Any, Any, T]) -> T:
     except RuntimeError:
         return asyncio.run(coro)                          # no loop here — the common case
 
-    result: list[T] = []
-    error: list[BaseException] = []
+    import nest_asyncio  # lazy: only needed inside a notebook
 
-    def _run() -> None:
-        try:
-            result.append(asyncio.run(coro))
-        except BaseException as e:  # noqa: BLE001 - re-raised on the caller's thread below
-            error.append(e)
-
-    thread = threading.Thread(target=_run, daemon=True)
-    thread.start()
-    thread.join()
-    if error:
-        raise error[0]
-    return result[0]
+    nest_asyncio.apply()                                  # idempotent — safe to call every time
+    return asyncio.run(coro)

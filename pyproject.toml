@@ -48,7 +48,7 @@ dev = [
 ]
 browser = ["playwright>=1.47"]
 ai = []  # LLM providers use httpx only — no extra deps needed
-engine = ["py-trees>=2.2"]  # reactive-engine playbooks (behavior trees)
+engine = ["py-trees>=2.2", "nest_asyncio>=1.6"]  # playbooks (behavior trees) + notebook-kernel loop fix
 capture = ["mitmproxy>=10"]  # live traffic capture primitive
 
 [project.scripts]
@@ -104,6 +104,10 @@ follow_imports = "skip"
 module = "mitmproxy.*"
 ignore_missing_imports = true
 follow_imports = "skip"   # mitmproxy's own source uses 3.12 syntax; don't type-check it
+
+[[tool.mypy.overrides]]
+module = "nest_asyncio"
+ignore_missing_imports = true   # no type stubs / py.typed marker published
 
 [[tool.mypy.overrides]]
 module = "pentora.engine.playbook"
