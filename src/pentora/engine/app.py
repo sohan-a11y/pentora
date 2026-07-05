@@ -26,7 +26,10 @@ from pentora.engine.llm_primitive import Classifier
 from pentora.engine.llm_rules import llm_heuristic_runner, llm_route_rule
 from pentora.engine.ollama_client import OllamaClassifier
 from pentora.engine.playbook import jwt_rule, jwt_runner
+from pentora.engine.playbook_bola import bola_rule, bola_runner
 from pentora.engine.playbook_idor import idor_rule, idor_runner
+from pentora.engine.playbook_sqli import sqli_rule, sqli_runner
+from pentora.engine.playbook_xss import xss_rule, xss_runner
 from pentora.engine.primitive import Governor, RateLimiter, RunContext, RunScope
 from pentora.engine.regression import (
     Delta,
@@ -132,7 +135,10 @@ def start(
     and return a ready-to-drive Engine. ``classifier`` lets tests inject a double for the LLM."""
     bb = Blackboard()
     chainer = RuleEngine(bb)
-    for rule in (jwt_rule(), idor_rule(), llm_route_rule(), disclosure_verify_rule()):
+    for rule in (
+        jwt_rule(), idor_rule(), bola_rule(), sqli_rule(), xss_rule(),
+        llm_route_rule(), disclosure_verify_rule(),
+    ):
         chainer.add_rule(rule)
     scope = RunScope(include=scope_hosts or [_host(target)], read_only=True)
     cart = CartEngine(
@@ -149,6 +155,9 @@ def start(
     for name, runner in (
         ("jwt_playbook", jwt_runner),
         ("idor_playbook", idor_runner),
+        ("bola_playbook", bola_runner),
+        ("sqli_playbook", sqli_runner),
+        ("xss_playbook", xss_runner),
         ("llm_heuristic_playbook", llm_heuristic_runner),
         ("disclosure_verify", disclosure_verify_runner),
     ):

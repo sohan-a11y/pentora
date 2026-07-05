@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from enum import StrEnum
+from html import escape
 from typing import Any
 
 from pentora.engine.disclosure_patterns import find_pii, find_stack_trace
@@ -155,6 +156,60 @@ class SqliValidator(ValidatorStrategy):
         return ValidationResult(Verdict.REFUTED, "no boolean divergence (true vs false)")
 
 
+class BolaValidator(IdorValidator):
+    """BOLA (OWASP API1:2023) — object-level authorization. The proof is identical to IDOR: a
+    value provably owned by the victim is returned to the attacker session and absent from a
+    control. What differs is provenance — the object reference comes from prior STATE (a captured
+    write), not a guessed path — so the finding is worded and scored as BOLA."""
+
+    claim = "bola"
+
+    def validate(self, hypo: Hypothesis, ev: dict[str, Any]) -> ValidationResult:
+        r = super().validate(hypo, ev)
+        if r.verdict is Verdict.CONFIRMED:
+            return ValidationResult(
+                r.verdict,
+                r.rationale,
+                cvss_vector="CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N",
+                poc="user_a creates an object; user_b GETs that object's id and receives its data.",
+                evidence_ids=r.evidence_ids,
+            )
+        return r
+
+
+class XssValidator(ValidatorStrategy):
+    """Reflection vs. execution. Confirmed ONLY when the injected markup is returned VERBATIM
+    (unescaped) in an HTML-context response — i.e. it would execute in a browser. Reflection in an
+    escaped form (``&lt;script&gt;``) is the framework doing its job → refuted. No reflection →
+    refuted. We never claim XSS from mere reflection; the byte-exact, unescaped, HTML-context
+    round-trip is the deterministic proxy for execution."""
+
+    claim = "xss"
+
+    def validate(self, hypo: Hypothesis, ev: dict[str, Any]) -> ValidationResult:
+        payload = str(ev.get("payload", ""))
+        body = str(ev.get("body", ""))
+        ctype = str(ev.get("content_type", "")).lower()
+        ids = list(ev.get("evidence_ids", []))
+        if not payload:
+            return ValidationResult(Verdict.INCONCLUSIVE, "no payload marker to search for")
+        html_ctx = "html" in ctype or "<html" in body.lower()
+        if payload in body and html_ctx:
+            return ValidationResult(
+                Verdict.CONFIRMED,
+                f"payload reflected verbatim in an HTML context: {payload[:48]}",
+                cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+                poc="Inject the payload in the parameter; it returns unescaped and executes.",
+                evidence_ids=ids,
+            )
+        esc = escape(payload)
+        if esc != payload and esc in body:
+            return ValidationResult(
+                Verdict.REFUTED, "payload reflected but HTML-escaped (neutralized)"
+            )
+        return ValidationResult(Verdict.REFUTED, "payload not reflected in an executable context")
+
+
 class PiiDisclosureValidator(ValidatorStrategy):
     """Confirm an LLM-proposed PII leak only if the response bytes carry a high-confidence
     pattern (Luhn-valid card, strict SSN, or a known secret). Refutes hallucinations."""
@@ -201,8 +256,10 @@ class DeterministicValidator:
         self._strats: dict[str, ValidatorStrategy] = {}
         for s in (
             IdorValidator(),
+            BolaValidator(),
             JwtForgeValidator(),
             SqliValidator(),
+            XssValidator(),
             PiiDisclosureValidator(),
             StackTraceValidator(),
         ):

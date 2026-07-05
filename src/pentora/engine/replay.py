@@ -76,7 +76,11 @@ class HttpReplayPrimitive(Primitive):
         )
         return PrimitiveResult(
             facts=[txn],
-            data={"status": resp.status_code, "body": body},
+            data={
+                "status": resp.status_code,
+                "body": body,
+                "content_type": resp.headers.get("content-type", ""),
+            },
             requests_made=1,
             summary=f"{inp.method} {inp.url} -> {resp.status_code}",
         )

@@ -112,6 +112,18 @@ disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-
 module = "pentora.engine.playbook_idor"
 disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-party base)
 
+[[tool.mypy.overrides]]
+module = "pentora.engine.playbook_bola"
+disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-party base)
+
+[[tool.mypy.overrides]]
+module = "pentora.engine.playbook_sqli"
+disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-party base)
+
+[[tool.mypy.overrides]]
+module = "pentora.engine.playbook_xss"
+disallow_subclassing_any = false   # subclasses py_trees.Behaviour (untyped 3rd-party base)
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 addopts = "--strict-markers --cov=pentora --cov-report=term-missing --cov-fail-under=80"

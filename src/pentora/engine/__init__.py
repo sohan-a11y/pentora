@@ -37,6 +37,7 @@ from pentora.engine.facts import (
 from pentora.engine.llm_primitive import Classifier, LlmClassifierPrimitive
 from pentora.engine.llm_rules import llm_heuristic_runner, llm_route_rule
 from pentora.engine.ollama_client import OllamaClassifier, smoke_test
+from pentora.engine.oracle import Payload, PayloadOracle
 from pentora.engine.primitive import (
     BlastRadius,
     Capability,
@@ -52,6 +53,7 @@ from pentora.engine.primitive import (
 from pentora.engine.replay import HttpReplayPrimitive, ReplayInput
 from pentora.engine.report import build_report, write_json, write_markdown
 from pentora.engine.validator import (
+    BolaValidator,
     DeterministicValidator,
     IdorValidator,
     JwtForgeValidator,
@@ -61,6 +63,7 @@ from pentora.engine.validator import (
     ValidationResult,
     ValidatorStrategy,
     Verdict,
+    XssValidator,
 )
 
 __all__ = [
@@ -69,6 +72,7 @@ __all__ = [
     "AttackAttempt",
     "Blackboard",
     "BlastRadius",
+    "BolaValidator",
     "Capability",
     "CaptureAddon",
     "CaptureInput",
@@ -92,6 +96,8 @@ __all__ = [
     "ObservedEndpoint",
     "OllamaClassifier",
     "Parameter",
+    "Payload",
+    "PayloadOracle",
     "Pattern",
     "Primitive",
     "PrimitiveResult",
@@ -112,6 +118,7 @@ __all__ = [
     "ValidationResult",
     "ValidatorStrategy",
     "Verdict",
+    "XssValidator",
     "build_report",
     "disclosure_verify_rule",
     "disclosure_verify_runner",
