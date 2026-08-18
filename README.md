@@ -1,13 +1,5 @@
 # Pentora
 
-![GitHub License](https://img.shields.io/github/license/sohan-a11y/pentora?style=flat-square)
-![GitHub Last Commit](https://img.shields.io/github/last-commit/sohan-a11y/pentora?style=flat-square)
-![GitHub Stars](https://img.shields.io/github/stars/sohan-a11y/pentora?style=flat-square)
-![GitHub Forks](https://img.shields.io/github/forks/sohan-a11y/pentora?style=flat-square)
-
-[![Skills](https://skillicons.dev/icons?i=python,docker,fastapi)](https://skillicons.dev)
-
-
 > Autonomous web application pentest orchestrator. One command. All phases. Production-ready reports.
 
 [![CI](https://github.com/sohan-a11y/pentora/actions/workflows/ci.yml/badge.svg)](https://github.com/sohan-a11y/pentora/actions)
