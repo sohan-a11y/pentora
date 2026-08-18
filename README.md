@@ -1,5 +1,12 @@
 # Pentora
 
+![GitHub License](https://img.shields.io/github/license/sohan-a11y/pentora?style=flat-square)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/sohan-a11y/pentora?style=flat-square)
+![GitHub Stars](https://img.shields.io/github/stars/sohan-a11y/pentora?style=flat-square)
+
+[![Skills](https://skillicons.dev/icons?i=python,docker,fastapi)](https://skillicons.dev)
+
+
 > Autonomous web application pentest orchestrator. One command. All phases. Production-ready reports.
 
 [![CI](https://github.com/sohan-a11y/pentora/actions/workflows/ci.yml/badge.svg)](https://github.com/sohan-a11y/pentora/actions)
@@ -216,3 +223,14 @@ AGPLv3. See [LICENSE](LICENSE).
 ## Legal
 
 **Only use Pentora against systems you own or have written authorization to test.** Unauthorized testing is illegal. Pentora refuses by default to scan `.mil`, `.gov`, and a curated list of forbidden TLDs.
+
+
+---
+
+<div align="center">
+
+**Built by [M Sai Sohan (@sohan-a11y)](https://github.com/sohan-a11y)**
+
+*If you find this project useful, please consider giving it a ⭐ on GitHub!*
+
+</div>
