@@ -106,6 +106,30 @@ pentora compare ./scan-2025-01/ ./scan-2025-02/
 pentora scan https://target.com --dry-run --phases all
 ```
 
+### Authorization Diff (`authzdiff`)
+
+Plan cross-principal authorization checks (BOLA/IDOR/BFLA) directly from an OpenAPI 3.x spec: every secured endpoint × every `(caller, owner)` role pair, each expecting a deny (`403`/`404`). Emits `plan.json` + `plan.md` for human review or live replay. Authorized targets only.
+
+```bash
+# Offline plan from the current spec (+ diff against the previous revision)
+pentora authzdiff --spec openapi.yaml --old previous.yaml --roles roles.yaml --out report/
+
+# Replay the plan against an authorized target; a 2xx on foreign access = CRITICAL finding
+pentora authzdiff --spec openapi.yaml --roles roles.yaml --live --base-url https://staging.internal
+```
+
+Roles file format:
+
+```yaml
+roles:
+  - name: admin
+    headers:
+      Authorization: "Bearer <admin-token>"
+  - name: user
+    headers:
+      Authorization: "Bearer <user-token>"
+```
+
 ## Profiles
 
 ```bash

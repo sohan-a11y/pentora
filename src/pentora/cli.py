@@ -505,3 +505,84 @@ def compare(dir_a: str, dir_b: str) -> None:
         click.echo("\ncomparison.json written.")
 
     asyncio.run(_run())
+
+
+@main.command("authzdiff")
+@click.option(
+    "--spec",
+    "spec_path",
+    required=True,
+    type=click.Path(exists=True, path_type=Path),
+    help="Current OpenAPI 3.x spec (YAML or JSON)",
+)
+@click.option("--old", "old_path", default=None, type=click.Path(exists=True, path_type=Path), help="Previous spec revision for diffing")  # noqa: E501
+@click.option("--roles", "roles_path", required=True, type=click.Path(exists=True, path_type=Path), help="Roles file: {name, headers} entries")  # noqa: E501
+@click.option("--assume-secured", is_flag=True, default=False, help="Treat every endpoint as secured regardless of security declarations")  # noqa: E501
+@click.option(
+    "--live",
+    is_flag=True,
+    default=False,
+    help="Replay cases against the target (authorized testing only)",
+)
+@click.option("--base-url", default=None, help="Base URL for --live (defaults to spec server)")
+@click.option("--out", "out_dir", type=click.Path(path_type=Path), default=Path("./authzdiff-report"), help="Report directory")  # noqa: E501
+def authzdiff(  # noqa: PLR0913
+    spec_path: Path,
+    old_path: Path | None,
+    roles_path: Path,
+    assume_secured: bool,
+    live: bool,
+    base_url: str | None,
+    out_dir: Path,
+) -> None:
+    """Plan (and optionally replay) cross-principal authorization checks from an OpenAPI spec."""  # noqa: E501
+    from pentora.authzdiff.matrix import (
+        build_matrix,
+        load_roles,
+        render_plan_json,
+        render_plan_markdown,
+    )
+    from pentora.authzdiff.spec import load_spec, spec_diff
+
+    spec = load_spec(spec_path)
+    diff = spec_diff(load_spec(old_path), spec) if old_path else None
+    roles = load_roles(roles_path)
+    cases = build_matrix(spec, roles, assume_secured=assume_secured)
+
+    results = None
+    if live:
+        from pentora.authzdiff.replay import HttpxReplayHook, run_live
+
+        resolved_base = base_url
+        if not resolved_base:
+            servers = spec.get("servers") or []
+            resolved_base = servers[0].get("url") if servers else None
+        if not resolved_base:
+            raise click.UsageError("--live requires --base-url (or a servers[] entry in the spec)")
+
+        click.echo(f"Replaying {len(cases)} case(s) against {resolved_base} ...")
+        results = [r.to_dict() | {"body_snippet": r.body_snippet} for r in run_live(
+            cases, HttpxReplayHook(resolved_base, roles, param_values={})
+        )]
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plan_json = render_plan_json(cases, roles=roles, diff=diff, results=results)
+    plan_md = render_plan_markdown(cases, roles=roles, diff=diff, results=results)
+    (out_dir / "plan.json").write_text(plan_json, encoding="utf-8")
+    (out_dir / "plan.md").write_text(plan_md, encoding="utf-8")
+
+    click.echo(f"Planned {len(cases)} cross-principal case(s) -> {out_dir}/plan.json, plan.md")
+    if diff is not None and (diff.added_endpoints or diff.removed_endpoints):
+        click.echo(
+            f"Spec diff: +{len(diff.added_endpoints)} / -{len(diff.removed_endpoints)} endpoint(s)"
+        )
+    if results is not None:
+        critical = sum(1 for r in results if r["verdict"] == "critical_finding")
+        denied = sum(1 for r in results if r["verdict"] == "expected_deny")
+        inconclusive = len(results) - critical - denied
+        click.echo(
+            f"Live verdicts: {critical} CRITICAL finding(s), {denied} expected deny, "
+            f"{inconclusive} inconclusive"
+        )
+        if critical:
+            click.echo("[!] 2xx on foreign access — verify BOLA/IDOR before reporting.")
